@@ -155,19 +155,29 @@ typedef enum
   RNG_DEFAULT,
   RNG_BEST,
   RNG_WORST,
-  RNG_PRESET_CUSTOM // preset display only: the three settings differ
+  RNG_PRESET_CUSTOM // preset display only: the settings differ
 } rng_mode_t;
 
 extern int rng_preset;
 extern int rng_player_damage;
 extern int rng_enemy_damage;
 extern int rng_enemy_stagger;
+extern int rng_player_accuracy;
+extern int rng_enemy_accuracy;
 
 void M_BindRNGVariables(void);
 
 // Replaces "P_Random(c) % mod" in a damage formula. Returns 0..mod-1.
 // from_player: the attack was made by the player (otherwise by a monster).
 int P_DamageRoll(pr_class_t pr_class, int mod, boolean from_player);
+
+// The vanilla "P_Random(c) - P_Random(c)" spread roll (-255..255). Draws the
+// same two numbers in the same order as the code it replaces.
+int P_SpreadRoll(pr_class_t pr_class);
+
+// Pieces of the mbf21 hitscan spread formulas (see P_RandomHitscanAngle).
+int64_t P_HitscanSpreadBAM(fixed_t spread);
+int P_HitscanSlopeFromAngle(int angle);
 
 // Replaces the pain chance roll in P_DamageMobj. The result is compared with
 // "roll < painchance", so a low value always staggers, a high one never does.

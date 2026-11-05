@@ -939,6 +939,12 @@ void A_FirePlasma(mobj_t *mo, player_t *player, pspdef_t *psp)
 
 fixed_t bulletslope;
 
+// Accuracy decision of the attack in progress (see P_HitscanRolls).
+// P_BulletSlope starts a new one; each weapon fills in its own spread.
+static hitscan_t bullet_hs;
+
+#define HSPREAD(shift) (((int64_t)255) << (shift))
+
 static void P_BulletSlope(mobj_t *mo)
 {
   angle_t an = mo->angle;    // see which target is to be aimed at
@@ -960,6 +966,8 @@ static void P_BulletSlope(mobj_t *mo)
 	bulletslope = P_AimLineAttack(mo, an -= 2<<26, 16*64*FRACUNIT, mask);
     }
   while (mask && (mask=0, !linetarget));  // killough 8/2/98
+
+  P_HitscanInit(&bullet_hs, mo, true, mo->angle, bulletslope);
 }
 
 //
@@ -973,8 +981,10 @@ void P_GunShot(mobj_t *mo, boolean accurate)
 
   if (!accurate)
     {  // killough 5/5/98: remove dependence on order of evaluation:
-      int t = P_Random(pr_misfire);
-      angle += shiftleft32(t - P_Random(pr_misfire), 18);
+      int h = P_SpreadRoll(pr_misfire);
+      bullet_hs.hmax = HSPREAD(18);
+      P_HitscanRolls(&bullet_hs, &h, NULL);
+      angle += shiftleft32(h, 18);
     }
 
   P_LineAttack(mo, angle, MISSILERANGE, bulletslope, damage);
@@ -1047,11 +1057,14 @@ void A_FireShotgun2(mobj_t *mo, player_t *player, pspdef_t *psp)
       int damage = 5*(P_DamageRoll(pr_shotgun, 3, true)+1);
       angle_t angle = player->mo->angle;
       // killough 5/5/98: remove dependence on order of evaluation:
-      int t = P_Random(pr_shotgun);
-      angle += shiftleft32(t - P_Random(pr_shotgun), 19);
-      t = P_Random(pr_shotgun);
+      int h = P_SpreadRoll(pr_shotgun);
+      int v = P_SpreadRoll(pr_shotgun);
+      bullet_hs.hmax = HSPREAD(19);
+      bullet_hs.vshift = 5;
+      P_HitscanRolls(&bullet_hs, &h, &v);
+      angle += shiftleft32(h, 19);
       P_LineAttack(player->mo, angle, MISSILERANGE, bulletslope +
-                   shiftleft32(t - P_Random(pr_shotgun), 5), damage);
+                   shiftleft32(v, 5), damage);
     }
 }
 
@@ -1369,9 +1382,13 @@ void A_WeaponBulletAttack(mobj_t *mo, player_t *player, pspdef_t *psp)
   for (i = 0; i < numbullets; i++)
   {
     damage = (P_DamageRoll(pr_mbf21, damagemod, true) + 1) * damagebase;
-    const angle_t angle = player->mo->angle
-                          + (angle_t)P_RandomHitscanAngle(pr_mbf21, hspread);
-    slope = bulletslope + P_RandomHitscanSlope(pr_mbf21, vspread);
+    int h = P_SpreadRoll(pr_mbf21);
+    int v = P_SpreadRoll(pr_mbf21);
+    bullet_hs.hmax = P_HitscanSpreadBAM(hspread);
+    bullet_hs.vmax = P_HitscanSpreadBAM(vspread);
+    P_HitscanRolls(&bullet_hs, &h, &v);
+    const angle_t angle = P_HitscanAngle(&bullet_hs, h);
+    slope = P_HitscanSlope(&bullet_hs, v);
 
     P_LineAttack(player->mo, angle, MISSILERANGE, slope, damage);
   }

@@ -1165,7 +1165,7 @@ static void OptionsResetPage(void)
     }
 }
 
-// Choosing Default/Best/Worst as the preset sets all three RNG settings.
+// Choosing Default/Best/Worst as the preset sets every RNG setting.
 // Custom leaves the individual settings as they are.
 void MN_OptionsApplyRNGPreset(void)
 {
@@ -1174,6 +1174,8 @@ void MN_OptionsApplyRNGPreset(void)
         rng_player_damage = rng_preset;
         rng_enemy_damage = rng_preset;
         rng_enemy_stagger = rng_preset;
+        rng_player_accuracy = rng_preset;
+        rng_enemy_accuracy = rng_preset;
     }
 }
 
@@ -1181,7 +1183,9 @@ void MN_OptionsApplyRNGPreset(void)
 void MN_OptionsUpdateRNGPreset(void)
 {
     if (rng_player_damage == rng_enemy_damage
-        && rng_enemy_damage == rng_enemy_stagger)
+        && rng_enemy_damage == rng_enemy_stagger
+        && rng_enemy_stagger == rng_player_accuracy
+        && rng_player_accuracy == rng_enemy_accuracy)
     {
         rng_preset = rng_player_damage;
     }

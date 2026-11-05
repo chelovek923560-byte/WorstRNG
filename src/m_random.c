@@ -23,7 +23,6 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <limits.h>
 #include <stdint.h>
 
 #include "doomstat.h"
@@ -143,16 +142,32 @@ int Woof_Random(void)
 // Outputs a random angle between (-spread, spread), as an int ('cause it can be negative).
 //   spread: Maximum angle (degrees, in fixed point -- not BAM!)
 //
+int64_t P_HitscanSpreadBAM(fixed_t spread)
+{
+  // FixedToAngle doesn't work for negative numbers,
+  // so for convenience take just the absolute value.
+  return (spread < 0 ? FixedToAngle(-spread) : FixedToAngle(spread));
+}
+
 int P_RandomHitscanAngle(pr_class_t pr_class, fixed_t spread)
 {
   int t;
   int64_t spread_bam;
 
-  // FixedToAngle doesn't work for negative numbers,
-  // so for convenience take just the absolute value.
-  spread_bam = (spread < 0 ? FixedToAngle(-spread) : FixedToAngle(spread));
+  spread_bam = P_HitscanSpreadBAM(spread);
   t = P_Random(pr_class);
   return (int)((spread_bam * (t - P_Random(pr_class))) / 255);
+}
+
+int P_HitscanSlopeFromAngle(int angle)
+{
+  // clamp it, yo
+  if (angle > ANG90)
+    return finetangent[0];
+  else if (-angle > ANG90)
+    return finetangent[FINEANGLES/2 - 1];
+  else
+    return finetangent[(ANG90 - angle) >> ANGLETOFINESHIFT];
 }
 
 //
@@ -166,13 +181,7 @@ int P_RandomHitscanSlope(pr_class_t pr_class, fixed_t spread)
 
   angle = P_RandomHitscanAngle(pr_class, spread);
 
-  // clamp it, yo
-  if (angle > ANG90)
-    return finetangent[0];
-  else if (-angle > ANG90)
-    return finetangent[FINEANGLES/2 - 1];
-  else
-    return finetangent[(ANG90 - angle) >> ANGLETOFINESHIFT];
+  return P_HitscanSlopeFromAngle(angle);
 }
 
 
@@ -208,6 +217,8 @@ int rng_preset = RNG_DEFAULT;
 int rng_player_damage = RNG_DEFAULT;
 int rng_enemy_damage = RNG_DEFAULT;
 int rng_enemy_stagger = RNG_DEFAULT;
+int rng_player_accuracy = RNG_DEFAULT;
+int rng_enemy_accuracy = RNG_DEFAULT;
 
 void M_BindRNGVariables(void)
 {
@@ -219,6 +230,10 @@ void M_BindRNGVariables(void)
     "Enemy damage rolls (0 = Default; 1 = Best; 2 = Worst)");
   BIND_NUM(rng_enemy_stagger, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
     "Enemy stagger (pain) rolls (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_player_accuracy, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Player hitscan accuracy (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_enemy_accuracy, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Enemy hitscan accuracy (0 = Default; 1 = Best; 2 = Worst)");
 }
 
 int P_DamageRoll(pr_class_t pr_class, int mod, boolean from_player)
@@ -236,6 +251,12 @@ int P_DamageRoll(pr_class_t pr_class, int mod, boolean from_player)
   return ((mode == RNG_BEST) == from_player) ? mod - 1 : 0;
 }
 
+int P_SpreadRoll(pr_class_t pr_class)
+{
+  const int t = P_Random(pr_class);
+  return t - P_Random(pr_class);
+}
+
 int P_PainRoll(boolean target_is_player)
 {
   const int roll = P_Random(pr_painchance);
@@ -248,7 +269,8 @@ int P_PainRoll(boolean target_is_player)
     case RNG_BEST:
       return 0;       // always staggers (if the monster has any pain chance)
     case RNG_WORST:
-      return INT_MAX; // never staggers
+      return 255;     // the highest roll the game can make: only monsters with
+                      // a pain chance of 256 (always flinch) still stagger
     default:
       return roll;
   }

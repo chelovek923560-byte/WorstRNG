@@ -1305,8 +1305,9 @@ void A_FaceTarget(mobj_t *actor)
 
 void A_PosAttack(mobj_t *actor)
 {
-  int damage, slope, t;
+  int damage, slope, h;
   angle_t angle;
+  hitscan_t hs;
 
   if (!actor->target)
     return;
@@ -1316,8 +1317,11 @@ void A_PosAttack(mobj_t *actor)
   S_StartSound(actor, sfx_pistol);
 
   // killough 5/5/98: remove dependence on order of evaluation:
-  t = P_Random(pr_posattack);
-  angle += shiftleft32(t - P_Random(pr_posattack), 20);
+  h = P_SpreadRoll(pr_posattack);
+  P_HitscanInit(&hs, actor, false, angle, slope);
+  hs.hmax = ((int64_t)255) << 20;
+  P_HitscanRolls(&hs, &h, NULL);
+  angle += shiftleft32(h, 20);
   damage = (P_DamageRoll(pr_posattack, 5, false) + 1)*3;
   P_LineAttack(actor, angle, MISSILERANGE, slope, damage);
 }
@@ -1325,6 +1329,7 @@ void A_PosAttack(mobj_t *actor)
 void A_SPosAttack(mobj_t* actor)
 {
   int i, bangle, slope;
+  hitscan_t hs;
 
   if (!actor->target)
     return;
@@ -1332,10 +1337,14 @@ void A_SPosAttack(mobj_t* actor)
   A_FaceTarget(actor);
   bangle = actor->angle;
   slope = P_AimLineAttack(actor, bangle, MISSILERANGE, 0); // killough 8/2/98
+  P_HitscanInit(&hs, actor, false, bangle, slope);
+  hs.hmax = ((int64_t)255) << 20;
   for (i=0; i<3; i++)
     {  // killough 5/5/98: remove dependence on order of evaluation:
-      int t = P_Random(pr_sposattack);
-      int angle = bangle + shiftleft32(t - P_Random(pr_sposattack), 20);
+      int h = P_SpreadRoll(pr_sposattack);
+      int angle;
+      P_HitscanRolls(&hs, &h, NULL);
+      angle = bangle + shiftleft32(h, 20);
       int damage = ((P_DamageRoll(pr_sposattack, 5, false))+1)*3;
       P_LineAttack(actor, angle, MISSILERANGE, slope, damage);
     }
@@ -1343,7 +1352,8 @@ void A_SPosAttack(mobj_t* actor)
 
 void A_CPosAttack(mobj_t *actor)
 {
-  int angle, bangle, damage, slope, t;
+  int angle, bangle, damage, slope, h;
+  hitscan_t hs;
 
   if (!actor->target)
     return;
@@ -1353,8 +1363,11 @@ void A_CPosAttack(mobj_t *actor)
   slope = P_AimLineAttack(actor, bangle, MISSILERANGE, 0); // killough 8/2/98
 
   // killough 5/5/98: remove dependence on order of evaluation:
-  t = P_Random(pr_cposattack);
-  angle = bangle + shiftleft32(t - P_Random(pr_cposattack), 20);
+  h = P_SpreadRoll(pr_cposattack);
+  P_HitscanInit(&hs, actor, false, bangle, slope);
+  hs.hmax = ((int64_t)255) << 20;
+  P_HitscanRolls(&hs, &h, NULL);
+  angle = bangle + shiftleft32(h, 20);
   damage = ((P_DamageRoll(pr_cposattack, 5, false))+1)*3;
   P_LineAttack(actor, angle, MISSILERANGE, slope, damage);
 }
@@ -2799,6 +2812,7 @@ void A_MonsterBulletAttack(mobj_t *actor)
 {
   int hspread, vspread, numbullets, damagebase, damagemod;
   int aimslope, i, damage, slope;
+  hitscan_t hs;
 
   if (!mbf21 || !actor->target)
     return;
@@ -2814,12 +2828,18 @@ void A_MonsterBulletAttack(mobj_t *actor)
 
   aimslope = P_AimLineAttack(actor, actor->angle, MISSILERANGE, 0);
 
+  P_HitscanInit(&hs, actor, false, actor->angle, aimslope);
+  hs.hmax = P_HitscanSpreadBAM(hspread);
+  hs.vmax = P_HitscanSpreadBAM(vspread);
+
   for (i = 0; i < numbullets; i++)
   {
     damage = (P_DamageRoll(pr_mbf21, damagemod, false) + 1) * damagebase;
-    const angle_t angle = actor->angle
-                          + (angle_t)P_RandomHitscanAngle(pr_mbf21, hspread);
-    slope = aimslope + P_RandomHitscanSlope(pr_mbf21, vspread);
+    int h = P_SpreadRoll(pr_mbf21);
+    int v = P_SpreadRoll(pr_mbf21);
+    P_HitscanRolls(&hs, &h, &v);
+    const angle_t angle = P_HitscanAngle(&hs, h);
+    slope = P_HitscanSlope(&hs, v);
 
     P_LineAttack(actor, angle, MISSILERANGE, slope, damage);
   }

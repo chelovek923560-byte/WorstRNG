@@ -19,6 +19,7 @@
 //-----------------------------------------------------------------------------
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "d_player.h"
 #include "deh_misc.h"
@@ -1480,6 +1481,8 @@ static int aim_flags_mask; // killough 8/2/98: for more intelligent autoaiming
 
 static fixed_t shootz;  // Height if not aiming up or down
 static int la_damage;
+static boolean la_dry;          // P_TestLineAttack: no side effects
+static mobj_t *la_dry_hit;      // ... and what it would have hit
 fixed_t attackrange;
 
 static fixed_t   aimslope;
@@ -1595,7 +1598,7 @@ static boolean PTR_ShootTraverse(intercept_t *in)
     {
       line_t *li = in->d.line;
 
-      if (li->special)
+      if (li->special && !la_dry)
 	{
 	  int side = P_PointOnLineSide(shootthing->x, shootthing->y, li);
 	  P_ShootSpecialLine(shootthing, li, side);
@@ -1623,6 +1626,9 @@ static boolean PTR_ShootTraverse(intercept_t *in)
 	       FixedDiv (opentop - shootz , dist) >= aimslope))
 	    return true;      // shot continues
 	}
+
+      if (la_dry)
+	return false;           // hit a wall (or the sky): nothing was hit
 
       // hit line
       // position a bit closer
@@ -1699,6 +1705,12 @@ static boolean PTR_ShootTraverse(intercept_t *in)
 
   if (thingbottomslope > aimslope)
     return true;  // shot under the thing
+
+  if (la_dry)
+    {
+      la_dry_hit = th;
+      return false;
+    }
 
   // hit thing
   // position a bit closer
@@ -1789,6 +1801,207 @@ void P_LineAttack(mobj_t *t1, angle_t angle, fixed_t distance,
   attackrange = distance;
   aimslope = slope;
   P_PathTraverse(t1->x,t1->y,x2,y2,PT_ADDLINES|PT_ADDTHINGS,PTR_ShootTraverse);
+}
+
+//
+// P_TestLineAttack
+// Follows exactly the path P_LineAttack would, but changes nothing in the
+// world: no puffs or blood, no damage, no shootable lines triggered, no RNG.
+// Returns the thing that would be hit, or NULL.
+//
+mobj_t *P_TestLineAttack(mobj_t *t1, angle_t angle, fixed_t distance,
+                         fixed_t slope)
+{
+  fixed_t x2, y2;
+
+  angle >>= ANGLETOFINESHIFT;
+  shootthing = t1;
+  la_damage = 0;
+  x2 = t1->x + (distance>>FRACBITS)*finecosine[angle];
+  y2 = t1->y + (distance>>FRACBITS)*finesine[angle];
+  shootz = t1->z + (t1->height>>1) + 8*FRACUNIT;
+  attackrange = distance;
+  aimslope = slope;
+  la_dry = true;
+  la_dry_hit = NULL;
+  P_PathTraverse(t1->x,t1->y,x2,y2,PT_ADDLINES|PT_ADDTHINGS,PTR_ShootTraverse);
+  la_dry = false;
+  return la_dry_hit;
+}
+
+//
+// Hitscan accuracy
+//
+
+void P_HitscanInit(hitscan_t *hs, mobj_t *source, boolean from_player,
+                   angle_t angle, fixed_t slope)
+{
+  memset(hs, 0, sizeof(*hs));
+  hs->source = source;
+  hs->from_player = from_player;
+  hs->angle = angle;
+  hs->slope = slope;
+}
+
+// The final aim for a given roll. These are the vanilla formulas: with the
+// vanilla roll they give the vanilla angle and slope.
+angle_t P_HitscanAngle(const hitscan_t *hs, int h)
+{
+  return hs->angle + (angle_t)(hs->hmax * h / 255);
+}
+
+fixed_t P_HitscanSlope(const hitscan_t *hs, int v)
+{
+  if (hs->vshift)
+    return hs->slope + shiftleft32(v, hs->vshift);
+  if (hs->vmax)
+    return hs->slope + P_HitscanSlopeFromAngle((int)(hs->vmax * v / 255));
+  return hs->slope;
+}
+
+// Would a bullet with these rolls hit what the setting cares about?
+// Player: any thing. Monster: the player.
+static boolean P_HitscanHits(const hitscan_t *hs, int h, int v)
+{
+  const mobj_t *th = P_TestLineAttack(hs->source, P_HitscanAngle(hs, h),
+                                      MISSILERANGE, P_HitscanSlope(hs, v));
+  return hs->from_player ? th != NULL : th && th->player;
+}
+
+#define HS_MAXCAND 40
+
+// Fills "list" with the roll values to try, best candidates first.
+// want_hit: from the middle outward. Otherwise: the extremes only (a target
+// is a single block of angles, so if both ends miss it, something misses;
+// if both ends hit it, everything hits and the normal roll is kept).
+static int P_HitscanCandidates(int *list, boolean want_hit, int step)
+{
+  int n = 0, r;
+
+  if (want_hit)
+  {
+    list[n++] = 0;
+    for (r = step; r < 255; r += step)
+    {
+      list[n++] = r;
+      list[n++] = -r;
+    }
+  }
+  list[n++] = -255;
+  list[n++] = 255;
+  return n;
+}
+
+static void P_HitscanDecide(hitscan_t *hs, boolean want_hit)
+{
+  const boolean has_h = hs->hmax != 0;
+  const boolean has_v = hs->vshift != 0 || hs->vmax != 0;
+  int hl[HS_MAXCAND], vl[HS_MAXCAND];
+  int nh, nv, i, j;
+
+  hs->decided = true;
+  hs->found = false;
+
+  if (!has_h && !has_v)
+    return;                         // nothing to roll
+
+  // Vertical spread is rare (super shotgun), so keep its grid coarse.
+  nh = has_h ? P_HitscanCandidates(hl, want_hit, has_v ? 32 : 16) : 0;
+  nv = has_v ? P_HitscanCandidates(vl, want_hit, 32) : 0;
+
+  if (!has_h)
+  {
+    hl[0] = 0;
+    nh = 1;
+  }
+  if (!has_v)
+  {
+    vl[0] = 0;
+    nv = 1;
+  }
+
+  if (want_hit)
+  {
+    for (i = 0; i < nh; i++)
+      for (j = 0; j < nv; j++)
+        if (P_HitscanHits(hs, hl[i], vl[j]))
+        {
+          hs->h = hl[i];
+          hs->v = vl[j];
+          hs->found = true;
+          return;
+        }
+  }
+  else
+  {
+    // Corners first, then the middle of each edge.
+    for (i = 0; i < nh; i++)
+      for (j = 0; j < nv; j++)
+        if (!P_HitscanHits(hs, hl[i], vl[j]))
+        {
+          hs->h = hl[i];
+          hs->v = vl[j];
+          hs->found = true;
+          return;
+        }
+    if (has_h && has_v)
+    {
+      static const int mid[2] = {-255, 255};
+      for (i = 0; i < 2; i++)
+      {
+        if (!P_HitscanHits(hs, mid[i], 0))
+        {
+          hs->h = mid[i]; hs->v = 0; hs->found = true; return;
+        }
+        if (!P_HitscanHits(hs, 0, mid[i]))
+        {
+          hs->h = 0; hs->v = mid[i]; hs->found = true; return;
+        }
+      }
+    }
+
+    // The ends all hit. Normally that means everything hits, but two targets
+    // can leave a gap between them, so look through the middle as well.
+    nh = has_h ? P_HitscanCandidates(hl, true, has_v ? 32 : 16) : 1;
+    nv = has_v ? P_HitscanCandidates(vl, true, 32) : 1;
+    if (!has_h)
+      hl[0] = 0;
+    if (!has_v)
+      vl[0] = 0;
+    for (i = 0; i < nh; i++)
+      for (j = 0; j < nv; j++)
+        if (!P_HitscanHits(hs, hl[i], vl[j]))
+        {
+          hs->h = hl[i];
+          hs->v = vl[j];
+          hs->found = true;
+          return;
+        }
+  }
+}
+
+void P_HitscanRolls(hitscan_t *hs, int *h, int *v)
+{
+  const int mode = hs->from_player ? CRITICAL(rng_player_accuracy)
+                                   : CRITICAL(rng_enemy_accuracy);
+
+  if (mode == RNG_DEFAULT || !hs->source)
+    return;
+
+  if (!hs->decided)
+  {
+    // Best: the player's bullets hit, the monsters' bullets miss the player.
+    // Worst: the other way around.
+    P_HitscanDecide(hs, (mode == RNG_BEST) == hs->from_player);
+  }
+
+  // If no roll can change the outcome, the vanilla roll stays.
+  if (hs->found)
+  {
+    *h = hs->h;
+    if (v)
+      *v = hs->v;
+  }
 }
 
 //

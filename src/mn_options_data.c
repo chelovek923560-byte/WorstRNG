@@ -1067,7 +1067,7 @@ static mn_item_t rng_items[] = {
     MN_CHOICE_ACT(
         "Preset", "rng_preset", rng_preset_strings, 8,
         MN_OptionsApplyRNGPreset,
-        "Preset:\n\nSets all three settings below at once.\n\n"
+        "Preset:\n\nSets all settings below at once.\n\n"
         "Default: normal vanilla rolls.\n"
         "Best: every roll goes your way.\n"
         "Worst: every roll goes against you.\n\n"
@@ -1095,7 +1095,24 @@ static mn_item_t rng_items[] = {
         "Enemy Stagger:\n\nWhether monsters flinch when hit.\n\n"
         "Default: normal pain chance.\n"
         "Best: monsters always flinch.\n"
-        "Worst: monsters never flinch."),
+        "Worst: monsters never flinch (except those that always do in vanilla, like Lost Souls)."),
+    MN_CHOICE_ACT(
+        "Player Accuracy", "rng_player_accuracy", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Player Accuracy:\n\nSpread of your hitscan weapons "
+        "(pistol, shotguns, chaingun).\n\n"
+        "Default: normal.\n"
+        "Best: bullets that can hit, hit.\n"
+        "Worst: bullets that can miss, miss.\n\n"
+        "Shots that cannot miss (the first pistol shot) still hit."),
+    MN_CHOICE_ACT(
+        "Enemy Accuracy", "rng_enemy_accuracy", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Enemy Accuracy:\n\nSpread of monster hitscan attacks "
+        "(zombiemen, shotgunners, chaingunners, Spider Mastermind).\n\n"
+        "Default: normal.\n"
+        "Best: their bullets that can miss you, miss.\n"
+        "Worst: their bullets that can hit you, hit."),
     MN_RESET,
     MN_END
 };

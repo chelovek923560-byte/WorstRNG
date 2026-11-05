@@ -59,6 +59,39 @@ void    P_UseLines(struct player_s *player);
 fixed_t P_AimLineAttack(struct mobj_s *t1, angle_t angle, fixed_t distance, int mask);
 void    P_LineAttack(struct mobj_s *t1, angle_t angle, fixed_t distance,
                      fixed_t slope, int damage );
+
+// Hitscan accuracy (Options -> RNG -> Player/Enemy Accuracy).
+//
+// One of these describes one attack (one trigger pull, or one monster volley).
+// The spread rolls are still drawn from the RNG exactly like vanilla; with the
+// setting on Best/Worst, P_HitscanRolls then swaps the horizontal/vertical
+// roll for a different value the real roll could also have produced, picked
+// by tracing test shots (no puffs, no damage, no line triggers). The choice is
+// made once per attack and reused for every bullet of that attack.
+typedef struct
+{
+  struct mobj_s *source;
+  boolean from_player;   // shooter is the player (otherwise a monster)
+  angle_t angle;         // aim before spread
+  fixed_t slope;         // aim before spread
+  int64_t hmax;          // angle offset (BAM) of a +255 horizontal roll; 0 = none
+  int vshift;            // vertical offset is (roll << vshift); 0 = none
+  int64_t vmax;          // mbf21: vertical angle (BAM) of a +255 roll; 0 = none
+  boolean decided;
+  boolean found;         // a replacement roll was found
+  int h, v;
+} hitscan_t;
+
+void    P_HitscanInit(hitscan_t *hs, struct mobj_s *source, boolean from_player,
+                      angle_t angle, fixed_t slope);
+void    P_HitscanRolls(hitscan_t *hs, int *h, int *v); // v may be NULL
+angle_t P_HitscanAngle(const hitscan_t *hs, int h);
+fixed_t P_HitscanSlope(const hitscan_t *hs, int v);
+
+// A trace with no side effects: returns the thing the bullet would hit.
+struct mobj_s *P_TestLineAttack(struct mobj_s *t1, angle_t angle,
+                                fixed_t distance, fixed_t slope);
+
 void    P_RadiusAttack(struct mobj_s *spot, struct mobj_s *source,
                        int damage, int distance);
 boolean P_CheckPosition(struct mobj_s *thing, fixed_t x, fixed_t y);
