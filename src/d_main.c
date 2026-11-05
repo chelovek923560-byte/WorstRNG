@@ -76,7 +76,6 @@
 #include "mn_menu.h"
 #include "mn_options.h"
 #include "m_misc.h"
-#include "m_random.h"
 #include "m_swap.h"
 #include "nw_client.h"
 #include "nw_dedicated.h"
@@ -1670,21 +1669,6 @@ void D_DoomMain(void)
 
   fastparm = clfastparm = M_CheckParm ("-fast");
   // jff 1/24/98 end of set to both working and command line value
-
-  //!
-  // @category game
-  //
-  // Worst possible luck: every combat roll goes against the player.
-  // Player damage is always minimum and spread is always widest; monster
-  // damage is always maximum, monsters never flinch and shoot accurately.
-  // Demos must be recorded and played back with this parameter set.
-  //
-
-  worstrng = M_CheckParm("-worstrng") > 0;
-  if (worstrng)
-  {
-    I_Printf(VB_INFO, "-worstrng: the RNG is out to get you.");
-  }
 
   //!
   // @category game

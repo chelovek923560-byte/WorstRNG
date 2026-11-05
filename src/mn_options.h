@@ -41,12 +41,15 @@ extern mn_menu_t advanced_gyro_menu;
 extern mn_menu_t input_bindings_menu;
 extern mn_menu_t interface_menu;
 extern mn_menu_t gameplay_menu;
+extern mn_menu_t rng_menu;
 extern mn_menu_t options_menu;
 
 void MN_BindMenu(mn_menu_t *menu);
 
 void MN_OptionsInit(void);
 void MN_OptionsOpen(void);
+void MN_OptionsApplyRNGPreset(void);
+void MN_OptionsUpdateRNGPreset(void);
 
 void MN_GetResolutionScaleStrings(mn_item_t *item);
 void MN_OptionsUpdateResolutionScale(void);

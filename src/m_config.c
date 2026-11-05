@@ -52,6 +52,7 @@
 #include "m_input.h"
 #include "m_io.h"
 #include "m_misc.h"
+#include "m_random.h"
 #include "mn_container.h"
 #include "mn_csmenu.h"
 #include "mn_options.h"
@@ -151,6 +152,7 @@ void M_InitConfig(void)
     M_BindInputVariables();
 
     G_BindEnemVariables();
+    M_BindRNGVariables();
     G_BindCompVariables();
     G_BindWeapVariables();
     WS_BindVariables();

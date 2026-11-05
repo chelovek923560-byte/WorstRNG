@@ -18,7 +18,6 @@ static const char *params[] = {
 "-nomonsters",
 "-pistolstart",
 "-respawn",
-"-worstrng",
 "-uv",
 "-1",
 "-2",
@@ -110,7 +109,6 @@ Game start options: \n\
   -nomo               Alias to -nomonsters.\n\
   -nomonsters         Disable monsters.\n\
   -pistolstart        Enables automatic pistol starts on each level.\n\
-  -worstrng           Worst possible luck: every combat roll goes against you.\n\
   -skill <skill>      Set the game skill, 1-5 (1: easiest, 5: hardest). A\n\
                       skill of 0 disables all monsters only in -complevel\n\
                       vanilla.\n\

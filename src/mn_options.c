@@ -34,6 +34,7 @@
 #include "m_config.h"
 #include "m_input.h"
 #include "m_misc.h"
+#include "m_random.h"
 #include "mn_container.h"
 #include "mn_font.h"
 #include "mn_common.h"
@@ -1091,6 +1092,7 @@ static mn_menu_t *all_menus[] = {
     &input_bindings_menu,
     &interface_menu,
     &gameplay_menu,
+    &rng_menu,
     &options_menu,
 };
 
@@ -1163,8 +1165,35 @@ static void OptionsResetPage(void)
     }
 }
 
+// Choosing Default/Best/Worst as the preset sets all three RNG settings.
+// Custom leaves the individual settings as they are.
+void MN_OptionsApplyRNGPreset(void)
+{
+    if (rng_preset >= RNG_DEFAULT && rng_preset <= RNG_WORST)
+    {
+        rng_player_damage = rng_preset;
+        rng_enemy_damage = rng_preset;
+        rng_enemy_stagger = rng_preset;
+    }
+}
+
+// Keeps the preset display in line with the three individual settings.
+void MN_OptionsUpdateRNGPreset(void)
+{
+    if (rng_player_damage == rng_enemy_damage
+        && rng_enemy_damage == rng_enemy_stagger)
+    {
+        rng_preset = rng_player_damage;
+    }
+    else
+    {
+        rng_preset = RNG_PRESET_CUSTOM;
+    }
+}
+
 void MN_OptionsOpen(void)
 {
+    MN_OptionsUpdateRNGPreset();
     MN_ContainerOpen(&options_menu);
 }
 

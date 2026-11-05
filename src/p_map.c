@@ -572,7 +572,7 @@ static boolean PIT_CheckThing(mobj_t *thing) // killough 3/26/98: make static
       // A flying skull is smacking something.
       // Determine damage amount, and the skull comes to a dead stop.
 
-      int damage = (P_RiggedMod(pr_skullfly, 8, false)+1)*tmthing->info->damage;
+      int damage = (P_DamageRoll(pr_skullfly, 8, false)+1)*tmthing->info->damage;
 
       P_DamageMobj (thing, tmthing, tmthing, damage);
 
@@ -634,7 +634,9 @@ static boolean PIT_CheckThing(mobj_t *thing) // killough 3/26/98: make static
       // mbf21: ripper projectile
       if (tmthing->flags2 & MF2_RIP)
       {
-        damage = ((P_Random(pr_mbf21) & 3) + 2) * tmthing->info->damage;
+        damage = (P_DamageRoll(pr_mbf21, 4,
+                               tmthing->target && tmthing->target->player)
+                  + 2) * tmthing->info->damage;
         if (!(thing->flags & MF_NOBLOOD))
           P_SpawnBlood(tmthing->x, tmthing->y, tmthing->z, damage, thing);
         if (tmthing->info->ripsound)
@@ -648,7 +650,9 @@ static boolean PIT_CheckThing(mobj_t *thing) // killough 3/26/98: make static
 
       // damage / explode
 
-      damage = (P_RiggedMod(pr_damage, 8, tmthing->target && tmthing->target->player)+1)*tmthing->info->damage;
+      damage = (P_DamageRoll(pr_damage, 8,
+                             tmthing->target && tmthing->target->player)
+                +1)*tmthing->info->damage;
       P_DamageMobj (thing, tmthing, tmthing->target, damage);
 
       // don't traverse any more

@@ -30,6 +30,7 @@
 #include "m_input.h"
 #include "mn_container.h"
 #include "mn_common.h"
+#include "m_random.h"
 #include "mn_options.h"
 #include "r_data.h"
 #include "r_draw.h"
@@ -1058,12 +1059,68 @@ mn_menu_t gameplay_menu = {
     .num_pages = arrlen(gameplay_pages),
 };
 
+static const char *rng_strings[] = {"Default", "Best", "Worst"};
+
+static const char *rng_preset_strings[] = {"Default", "Best", "Worst", "Custom"};
+
+static mn_item_t rng_items[] = {
+    MN_CHOICE_ACT(
+        "Preset", "rng_preset", rng_preset_strings, 8,
+        MN_OptionsApplyRNGPreset,
+        "Preset:\n\nSets all three settings below at once.\n\n"
+        "Default: normal vanilla rolls.\n"
+        "Best: every roll goes your way.\n"
+        "Worst: every roll goes against you.\n\n"
+        "Shows Custom when the settings below differ.\n"
+        "Ignored in demos and netgames."),
+    MN_GAP(6),
+    MN_TITLE("Rolls"),
+    MN_CHOICE_ACT(
+        "Player Damage", "rng_player_damage", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Player Damage:\n\nDamage rolls of your weapons.\n\n"
+        "Default: normal.\n"
+        "Best: always the highest roll.\n"
+        "Worst: always the lowest roll."),
+    MN_CHOICE_ACT(
+        "Enemy Damage", "rng_enemy_damage", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Enemy Damage:\n\nDamage rolls of monster attacks.\n\n"
+        "Default: normal.\n"
+        "Best: monsters always roll the lowest damage.\n"
+        "Worst: monsters always roll the highest damage."),
+    MN_CHOICE_ACT(
+        "Enemy Stagger", "rng_enemy_stagger", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Enemy Stagger:\n\nWhether monsters flinch when hit.\n\n"
+        "Default: normal pain chance.\n"
+        "Best: monsters always flinch.\n"
+        "Worst: monsters never flinch."),
+    MN_RESET,
+    MN_END
+};
+
+static mn_page_t rng_pages[] = {
+    {.items = rng_items}
+};
+
+mn_menu_t rng_menu = {
+    .title_patch = "",
+    .title_text = "RNG",
+    .background = "FLOOR4_6",
+    .flags = MN_MENU_HINTS | MN_MENU_CENTER_LAYOUT,
+    .layout = {.max_width = MN_PX(MN_MENU_WIDTH)},
+    .pages = rng_pages,
+    .num_pages = arrlen(rng_pages)
+};
+
 static mn_item_t options_items[] = {
     MN_MENU("Video", &video_menu),
     MN_MENU("Audio", &audio_menu),
     MN_MENU("Controls", &controls_menu),
     MN_MENU("Gameplay", &gameplay_menu),
     MN_MENU("Interface", &interface_menu),
+    MN_MENU("RNG", &rng_menu),
     MN_END
 };
 

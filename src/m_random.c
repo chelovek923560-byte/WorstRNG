@@ -23,9 +23,11 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <limits.h>
 #include <stdint.h>
 
 #include "doomstat.h"
+#include "m_config.h"
 #include "m_random.h"
 #include "tables.h"
 
@@ -137,52 +139,11 @@ int Woof_Random(void)
 // mbf21: [XA] Common random formulas used by codepointers
 
 //
-// -worstrng: adversarial RNG
-//
-// Every helper below still draws from the RNG exactly like the vanilla call it
-// replaces, so the random number stream (and everything that is NOT rigged)
-// behaves exactly as in stock Woof. Only the *result* of the roll is replaced
-// when -worstrng is given: whatever is worst for the player wins.
-//   player attacks:  minimum damage rolls, widest possible spread
-//   monster attacks: maximum damage rolls, zero spread
-//
-
-boolean worstrng = false;
-
-// Returns the real roll, or `rigged` if worstrng is on and `apply` is true.
-int P_RiggedRoll(pr_class_t pr_class, int rigged, boolean apply)
-{
-  int r = P_Random(pr_class);
-  return (worstrng && apply) ? rigged : r;
-}
-
-// Replaces "P_Random(c) % mod" in damage formulas.
-int P_RiggedMod(pr_class_t pr_class, int mod, boolean player_attack)
-{
-  int r = P_Random(pr_class) % mod;
-  if (!worstrng)
-    return r;
-  return player_attack ? 0 : mod - 1;
-}
-
-// Replaces "t = P_Random(c); t - P_Random(c)" (range -255..255).
-int P_RiggedSpread(pr_class_t pr_class, boolean player_attack)
-{
-  int t = P_Random(pr_class);
-  int d = t - P_Random(pr_class);
-  if (!worstrng)
-    return d;
-  if (!player_attack)
-    return 0;
-  return d < 0 ? -255 : 255; // widest spread, side taken from the real roll
-}
-
-//
 // P_RandomHitscanAngle
 // Outputs a random angle between (-spread, spread), as an int ('cause it can be negative).
 //   spread: Maximum angle (degrees, in fixed point -- not BAM!)
 //
-int P_RandomHitscanAngle(pr_class_t pr_class, fixed_t spread, boolean player_attack)
+int P_RandomHitscanAngle(pr_class_t pr_class, fixed_t spread)
 {
   int t;
   int64_t spread_bam;
@@ -190,8 +151,8 @@ int P_RandomHitscanAngle(pr_class_t pr_class, fixed_t spread, boolean player_att
   // FixedToAngle doesn't work for negative numbers,
   // so for convenience take just the absolute value.
   spread_bam = (spread < 0 ? FixedToAngle(-spread) : FixedToAngle(spread));
-  t = P_RiggedSpread(pr_class, player_attack);
-  return (int)((spread_bam * t) / 255);
+  t = P_Random(pr_class);
+  return (int)((spread_bam * (t - P_Random(pr_class))) / 255);
 }
 
 //
@@ -199,11 +160,11 @@ int P_RandomHitscanAngle(pr_class_t pr_class, fixed_t spread, boolean player_att
 // Outputs a random angle between (-spread, spread), converted to values used for slope
 //   spread: Maximum vertical angle (degrees, in fixed point -- not BAM!)
 //
-int P_RandomHitscanSlope(pr_class_t pr_class, fixed_t spread, boolean player_attack)
+int P_RandomHitscanSlope(pr_class_t pr_class, fixed_t spread)
 {
   int angle;
 
-  angle = P_RandomHitscanAngle(pr_class, spread, player_attack);
+  angle = P_RandomHitscanAngle(pr_class, spread);
 
   // clamp it, yo
   if (angle > ANG90)
@@ -237,3 +198,58 @@ int P_RandomHitscanSlope(pr_class_t pr_class, fixed_t spread, boolean player_att
 // Lee's Jan 19 sources
 //
 //----------------------------------------------------------------------------
+
+
+//
+// RNG settings (see m_random.h)
+//
+
+int rng_preset = RNG_DEFAULT;
+int rng_player_damage = RNG_DEFAULT;
+int rng_enemy_damage = RNG_DEFAULT;
+int rng_enemy_stagger = RNG_DEFAULT;
+
+void M_BindRNGVariables(void)
+{
+  BIND_NUM(rng_preset, RNG_DEFAULT, RNG_DEFAULT, RNG_PRESET_CUSTOM,
+    "RNG preset (0 = Default; 1 = Best; 2 = Worst; 3 = Custom)");
+  BIND_NUM(rng_player_damage, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Player damage rolls (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_enemy_damage, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Enemy damage rolls (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_enemy_stagger, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Enemy stagger (pain) rolls (0 = Default; 1 = Best; 2 = Worst)");
+}
+
+int P_DamageRoll(pr_class_t pr_class, int mod, boolean from_player)
+{
+  // Always consume the roll, exactly like the vanilla code did.
+  const int roll = P_Random(pr_class) % mod;
+  const int mode =
+    from_player ? CRITICAL(rng_player_damage) : CRITICAL(rng_enemy_damage);
+
+  if (mode == RNG_DEFAULT)
+    return roll;
+
+  // Best: the player hits for the most and monsters hit for the least.
+  // Worst: the other way around.
+  return ((mode == RNG_BEST) == from_player) ? mod - 1 : 0;
+}
+
+int P_PainRoll(boolean target_is_player)
+{
+  const int roll = P_Random(pr_painchance);
+
+  if (target_is_player)
+    return roll;
+
+  switch (CRITICAL(rng_enemy_stagger))
+  {
+    case RNG_BEST:
+      return 0;       // always staggers (if the monster has any pain chance)
+    case RNG_WORST:
+      return INT_MAX; // never staggers
+    default:
+      return roll;
+  }
+}

@@ -139,15 +139,43 @@ int Woof_Random(void);
 // Fix randoms for demos.
 void M_ClearRandom(void);
 
-// mbf21: [XA] Common random formulas used by codepointers
-int P_RandomHitscanAngle(pr_class_t pr_class, fixed_t spread, boolean player_attack);
-int P_RandomHitscanSlope(pr_class_t pr_class, fixed_t spread, boolean player_attack);
+//
+// RNG settings (Options -> RNG)
+//
+// Every setting is Default (stock vanilla rolls), Best (the roll always goes
+// the player's way) or Worst (the roll always goes against the player).
+// The helpers below still draw from the RNG exactly like the vanilla call
+// they replace, so the random number stream, and everything that is not
+// rigged, behaves exactly as without this feature. The settings are ignored
+// (CRITICAL) while recording/playing demos and in netgames.
+//
 
-// -worstrng: adversarial RNG for combat rolls (see m_random.c).
-extern boolean worstrng;
-int P_RiggedRoll(pr_class_t pr_class, int rigged, boolean apply);
-int P_RiggedMod(pr_class_t pr_class, int mod, boolean player_attack);
-int P_RiggedSpread(pr_class_t pr_class, boolean player_attack);
+typedef enum
+{
+  RNG_DEFAULT,
+  RNG_BEST,
+  RNG_WORST,
+  RNG_PRESET_CUSTOM // preset display only: the three settings differ
+} rng_mode_t;
+
+extern int rng_preset;
+extern int rng_player_damage;
+extern int rng_enemy_damage;
+extern int rng_enemy_stagger;
+
+void M_BindRNGVariables(void);
+
+// Replaces "P_Random(c) % mod" in a damage formula. Returns 0..mod-1.
+// from_player: the attack was made by the player (otherwise by a monster).
+int P_DamageRoll(pr_class_t pr_class, int mod, boolean from_player);
+
+// Replaces the pain chance roll in P_DamageMobj. The result is compared with
+// "roll < painchance", so a low value always staggers, a high one never does.
+int P_PainRoll(boolean target_is_player);
+
+// mbf21: [XA] Common random formulas used by codepointers
+int P_RandomHitscanAngle(pr_class_t pr_class, fixed_t spread);
+int P_RandomHitscanSlope(pr_class_t pr_class, fixed_t spread);
 
 #endif
 
