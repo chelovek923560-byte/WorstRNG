@@ -256,7 +256,7 @@ static boolean P_CheckMissileRange(mobj_t *actor)
   if (actor->flags2 & MF2_HIGHERMPROB && dist > 160)
     dist = 160;
 
-  if (P_Random(pr_missrange) < dist)
+  if (P_RiggedRoll(pr_missrange, 255, true) < dist)
     return false;
 
   if (actor->flags & MF_FRIEND && P_HitFriend(actor))
@@ -1316,9 +1316,9 @@ void A_PosAttack(mobj_t *actor)
   S_StartSound(actor, sfx_pistol);
 
   // killough 5/5/98: remove dependence on order of evaluation:
-  t = P_Random(pr_posattack);
-  angle += shiftleft32(t - P_Random(pr_posattack), 20);
-  damage = (P_Random(pr_posattack)%5 + 1)*3;
+  t = P_RiggedSpread(pr_posattack, false);
+  angle += shiftleft32(t, 20);
+  damage = (P_RiggedMod(pr_posattack, 5, false) + 1)*3;
   P_LineAttack(actor, angle, MISSILERANGE, slope, damage);
 }
 
@@ -1334,9 +1334,9 @@ void A_SPosAttack(mobj_t* actor)
   slope = P_AimLineAttack(actor, bangle, MISSILERANGE, 0); // killough 8/2/98
   for (i=0; i<3; i++)
     {  // killough 5/5/98: remove dependence on order of evaluation:
-      int t = P_Random(pr_sposattack);
-      int angle = bangle + shiftleft32(t - P_Random(pr_sposattack), 20);
-      int damage = ((P_Random(pr_sposattack)%5)+1)*3;
+      int t = P_RiggedSpread(pr_sposattack, false);
+      int angle = bangle + shiftleft32(t, 20);
+      int damage = ((P_RiggedMod(pr_sposattack, 5, false))+1)*3;
       P_LineAttack(actor, angle, MISSILERANGE, slope, damage);
     }
 }
@@ -1353,9 +1353,9 @@ void A_CPosAttack(mobj_t *actor)
   slope = P_AimLineAttack(actor, bangle, MISSILERANGE, 0); // killough 8/2/98
 
   // killough 5/5/98: remove dependence on order of evaluation:
-  t = P_Random(pr_cposattack);
-  angle = bangle + shiftleft32(t - P_Random(pr_cposattack), 20);
-  damage = ((P_Random(pr_cposattack)%5)+1)*3;
+  t = P_RiggedSpread(pr_cposattack, false);
+  angle = bangle + shiftleft32(t, 20);
+  damage = ((P_RiggedMod(pr_cposattack, 5, false))+1)*3;
   P_LineAttack(actor, angle, MISSILERANGE, slope, damage);
 }
 
@@ -1422,7 +1422,7 @@ void A_TroopAttack(mobj_t *actor)
     {
       int damage;
       S_StartSound(actor, sfx_claw);
-      damage = (P_Random(pr_troopattack)%8+1)*3;
+      damage = (P_RiggedMod(pr_troopattack, 8, false)+1)*3;
       P_DamageMobjBy(actor->target, actor, actor, damage, MOD_Melee);
       return;
     }
@@ -1436,7 +1436,7 @@ void A_SargAttack(mobj_t *actor)
   A_FaceTarget(actor);
   if (P_CheckMeleeRange(actor))
     {
-      int damage = ((P_Random(pr_sargattack)%10)+1)*4;
+      int damage = ((P_RiggedMod(pr_sargattack, 10, false))+1)*4;
       P_DamageMobjBy(actor->target, actor, actor, damage, MOD_Melee);
     }
 }
@@ -1448,7 +1448,7 @@ void A_HeadAttack(mobj_t *actor)
   A_FaceTarget (actor);
   if (P_CheckMeleeRange(actor))
     {
-      int damage = (P_Random(pr_headattack)%6+1)*10;
+      int damage = (P_RiggedMod(pr_headattack, 6, false)+1)*10;
       P_DamageMobjBy(actor->target, actor, actor, damage, MOD_Melee);
       return;
     }
@@ -1471,7 +1471,7 @@ void A_BruisAttack(mobj_t *actor)
     {
       int damage;
       S_StartSound(actor, sfx_claw);
-      damage = (P_Random(pr_bruisattack)%8+1)*10;
+      damage = (P_RiggedMod(pr_bruisattack, 8, false)+1)*10;
       P_DamageMobjBy(actor->target, actor, actor, damage, MOD_Melee);
       return;
     }
@@ -1598,7 +1598,7 @@ void A_SkelFist(mobj_t *actor)
   A_FaceTarget(actor);
   if (P_CheckMeleeRange(actor))
     {
-      int damage = ((P_Random(pr_skelfist)%10)+1)*6;
+      int damage = ((P_RiggedMod(pr_skelfist, 10, false))+1)*6;
       S_StartSound(actor, sfx_skepch);
       P_DamageMobjBy(actor->target, actor, actor, damage, MOD_Melee);
     }
@@ -2061,7 +2061,7 @@ void A_BetaSkullAttack(mobj_t *actor)
   S_StartSound(actor, actor->info->attacksound);
   }
   A_FaceTarget(actor);
-  damage = (P_Random(pr_skullfly)%8+1)*actor->info->damage;
+  damage = (P_RiggedMod(pr_skullfly, 8, false)+1)*actor->info->damage;
   P_DamageMobj(actor->target, actor, actor, damage);
 }
 
@@ -2816,10 +2816,10 @@ void A_MonsterBulletAttack(mobj_t *actor)
 
   for (i = 0; i < numbullets; i++)
   {
-    damage = (P_Random(pr_mbf21) % damagemod + 1) * damagebase;
+    damage = (P_RiggedMod(pr_mbf21, damagemod, false) + 1) * damagebase;
     const angle_t angle = actor->angle
-                          + (angle_t)P_RandomHitscanAngle(pr_mbf21, hspread);
-    slope = aimslope + P_RandomHitscanSlope(pr_mbf21, vspread);
+                          + (angle_t)P_RandomHitscanAngle(pr_mbf21, hspread, false);
+    slope = aimslope + P_RandomHitscanSlope(pr_mbf21, vspread, false);
 
     P_LineAttack(actor, angle, MISSILERANGE, slope, damage);
   }
@@ -2857,7 +2857,7 @@ void A_MonsterMeleeAttack(mobj_t *actor)
 
   S_StartSound(actor, hitsound);
 
-  damage = (P_Random(pr_mbf21) % damagemod + 1) * damagebase;
+  damage = (P_RiggedMod(pr_mbf21, damagemod, false) + 1) * damagebase;
   P_DamageMobjBy(actor->target, actor, actor, damage, MOD_Melee);
 }
 

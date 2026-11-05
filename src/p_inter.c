@@ -939,7 +939,7 @@ void P_DamageMobjBy(mobj_t *target,mobj_t *inflictor, mobj_t *source, int damage
 	}
     }
 
-  if ((justhit = (P_Random (pr_painchance) < target->info->painchance &&
+  if ((justhit = (P_RiggedRoll(pr_painchance, 255, !target->player) < target->info->painchance &&
 		  !(target->flags & MF_SKULLFLY)))) //killough 11/98: see below
     P_SetMobjState(target, target->info->painstate);
 

@@ -711,7 +711,7 @@ void A_Punch(mobj_t *mo, player_t *player, pspdef_t *psp)
   RETURN_IF_NO_PLAYER
 
   angle_t angle;
-  int t, slope, damage = (P_Random(pr_punch)%10+1)<<1;
+  int t, slope, damage = (P_RiggedMod(pr_punch, 10, true)+1)<<1;
   int range;
 
   if (player->powers[pw_strength])
@@ -720,8 +720,8 @@ void A_Punch(mobj_t *mo, player_t *player, pspdef_t *psp)
   angle = player->mo->angle;
 
   // killough 5/5/98: remove dependence on order of evaluation:
-  t = P_Random(pr_punchangle);
-  angle += (t - P_Random(pr_punchangle))<<18;
+  t = P_RiggedSpread(pr_punchangle, true);
+  angle += t<<18;
 
   range = (mbf21 ? player->mo->info->meleerange : MELEERANGE);
 
@@ -754,14 +754,14 @@ void A_Saw(mobj_t *mo, player_t *player, pspdef_t *psp)
 {
   RETURN_IF_NO_PLAYER
 
-  int slope, damage = 2*(P_Random(pr_saw)%10+1);
+  int slope, damage = 2*(P_RiggedMod(pr_saw, 10, true)+1);
   int range;
   angle_t angle = player->mo->angle;
 
   // killough 5/5/98: remove dependence on order of evaluation:
-  int t = P_Random(pr_saw);
+  int t = P_RiggedSpread(pr_saw, true);
 
-  angle += shiftleft32(t - P_Random(pr_saw), 18);
+  angle += shiftleft32(t, 18);
 
   // Use meleerange + 1 so that the puff doesn't skip the flash
   range = (mbf21 ? player->mo->info->meleerange : MELEERANGE) + 1;
@@ -968,13 +968,13 @@ static void P_BulletSlope(mobj_t *mo)
 
 void P_GunShot(mobj_t *mo, boolean accurate)
 {
-  int damage = 5*(P_Random(pr_gunshot)%3+1);
+  int damage = 5*(P_RiggedMod(pr_gunshot, 3, true)+1);
   angle_t angle = mo->angle;
 
   if (!accurate)
     {  // killough 5/5/98: remove dependence on order of evaluation:
-      int t = P_Random(pr_misfire);
-      angle += shiftleft32(t - P_Random(pr_misfire), 18);
+      int t = P_RiggedSpread(pr_misfire, true);
+      angle += shiftleft32(t, 18);
     }
 
   P_LineAttack(mo, angle, MISSILERANGE, bulletslope, damage);
@@ -1044,14 +1044,14 @@ void A_FireShotgun2(mobj_t *mo, player_t *player, pspdef_t *psp)
 
   for (i=0; i<20; i++)
     {
-      int damage = 5*(P_Random(pr_shotgun)%3+1);
+      int damage = 5*(P_RiggedMod(pr_shotgun, 3, true)+1);
       angle_t angle = player->mo->angle;
       // killough 5/5/98: remove dependence on order of evaluation:
-      int t = P_Random(pr_shotgun);
-      angle += shiftleft32(t - P_Random(pr_shotgun), 19);
-      t = P_Random(pr_shotgun);
+      int t = P_RiggedSpread(pr_shotgun, true);
+      angle += shiftleft32(t, 19);
+      t = P_RiggedSpread(pr_shotgun, true);
       P_LineAttack(player->mo, angle, MISSILERANGE, bulletslope +
-                   shiftleft32(t - P_Random(pr_shotgun), 5), damage);
+                   shiftleft32(t, 5), damage);
     }
 }
 
@@ -1138,7 +1138,7 @@ void A_BFGSpray(mobj_t *mo)
                   linetarget->z + (linetarget->height>>2), MT_EXTRABFG);
 
       for (damage=j=0; j<15; j++)
-        damage += (P_Random(pr_bfg)&7) + 1;
+        damage += (P_RiggedRoll(pr_bfg, 0, true)&7) + 1;
 
       P_DamageMobj(linetarget, mo->target, mo->target, damage);
     }
@@ -1368,10 +1368,10 @@ void A_WeaponBulletAttack(mobj_t *mo, player_t *player, pspdef_t *psp)
 
   for (i = 0; i < numbullets; i++)
   {
-    damage = (P_Random(pr_mbf21) % damagemod + 1) * damagebase;
+    damage = (P_RiggedMod(pr_mbf21, damagemod, true) + 1) * damagebase;
     const angle_t angle = player->mo->angle
-                          + (angle_t)P_RandomHitscanAngle(pr_mbf21, hspread);
-    slope = bulletslope + P_RandomHitscanSlope(pr_mbf21, vspread);
+                          + (angle_t)P_RandomHitscanAngle(pr_mbf21, hspread, true);
+    slope = bulletslope + P_RandomHitscanSlope(pr_mbf21, vspread, true);
 
     P_LineAttack(player->mo, angle, MISSILERANGE, slope, damage);
   }
@@ -1408,15 +1408,15 @@ void A_WeaponMeleeAttack(mobj_t *mo, player_t *player, pspdef_t *psp)
   if (range == 0)
     range = player->mo->info->meleerange;
 
-  damage = (P_Random(pr_mbf21) % damagemod + 1) * damagebase;
+  damage = (P_RiggedMod(pr_mbf21, damagemod, true) + 1) * damagebase;
   if (player->powers[pw_strength])
     damage = (damage * zerkfactor) >> FRACBITS;
 
   // slight randomization; weird vanillaism here. :P
   angle = player->mo->angle;
 
-  t = P_Random(pr_mbf21);
-  angle += (t - P_Random(pr_mbf21))<<18;
+  t = P_RiggedSpread(pr_mbf21, true);
+  angle += t<<18;
 
   // make autoaim prefer enemies
   slope = P_AimLineAttack(player->mo, angle, range, MF_FRIEND);

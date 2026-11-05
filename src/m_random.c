@@ -137,11 +137,52 @@ int Woof_Random(void)
 // mbf21: [XA] Common random formulas used by codepointers
 
 //
+// -worstrng: adversarial RNG
+//
+// Every helper below still draws from the RNG exactly like the vanilla call it
+// replaces, so the random number stream (and everything that is NOT rigged)
+// behaves exactly as in stock Woof. Only the *result* of the roll is replaced
+// when -worstrng is given: whatever is worst for the player wins.
+//   player attacks:  minimum damage rolls, widest possible spread
+//   monster attacks: maximum damage rolls, zero spread
+//
+
+boolean worstrng = false;
+
+// Returns the real roll, or `rigged` if worstrng is on and `apply` is true.
+int P_RiggedRoll(pr_class_t pr_class, int rigged, boolean apply)
+{
+  int r = P_Random(pr_class);
+  return (worstrng && apply) ? rigged : r;
+}
+
+// Replaces "P_Random(c) % mod" in damage formulas.
+int P_RiggedMod(pr_class_t pr_class, int mod, boolean player_attack)
+{
+  int r = P_Random(pr_class) % mod;
+  if (!worstrng)
+    return r;
+  return player_attack ? 0 : mod - 1;
+}
+
+// Replaces "t = P_Random(c); t - P_Random(c)" (range -255..255).
+int P_RiggedSpread(pr_class_t pr_class, boolean player_attack)
+{
+  int t = P_Random(pr_class);
+  int d = t - P_Random(pr_class);
+  if (!worstrng)
+    return d;
+  if (!player_attack)
+    return 0;
+  return d < 0 ? -255 : 255; // widest spread, side taken from the real roll
+}
+
+//
 // P_RandomHitscanAngle
 // Outputs a random angle between (-spread, spread), as an int ('cause it can be negative).
 //   spread: Maximum angle (degrees, in fixed point -- not BAM!)
 //
-int P_RandomHitscanAngle(pr_class_t pr_class, fixed_t spread)
+int P_RandomHitscanAngle(pr_class_t pr_class, fixed_t spread, boolean player_attack)
 {
   int t;
   int64_t spread_bam;
@@ -149,8 +190,8 @@ int P_RandomHitscanAngle(pr_class_t pr_class, fixed_t spread)
   // FixedToAngle doesn't work for negative numbers,
   // so for convenience take just the absolute value.
   spread_bam = (spread < 0 ? FixedToAngle(-spread) : FixedToAngle(spread));
-  t = P_Random(pr_class);
-  return (int)((spread_bam * (t - P_Random(pr_class))) / 255);
+  t = P_RiggedSpread(pr_class, player_attack);
+  return (int)((spread_bam * t) / 255);
 }
 
 //
@@ -158,11 +199,11 @@ int P_RandomHitscanAngle(pr_class_t pr_class, fixed_t spread)
 // Outputs a random angle between (-spread, spread), converted to values used for slope
 //   spread: Maximum vertical angle (degrees, in fixed point -- not BAM!)
 //
-int P_RandomHitscanSlope(pr_class_t pr_class, fixed_t spread)
+int P_RandomHitscanSlope(pr_class_t pr_class, fixed_t spread, boolean player_attack)
 {
   int angle;
 
-  angle = P_RandomHitscanAngle(pr_class, spread);
+  angle = P_RandomHitscanAngle(pr_class, spread, player_attack);
 
   // clamp it, yo
   if (angle > ANG90)

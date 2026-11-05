@@ -21,6 +21,7 @@
 #ifndef __M_RANDOM__
 #define __M_RANDOM__
 
+#include "doomtype.h"
 #include "m_fixed.h"
 
 // killough 1/19/98: rewritten to use to use a better random number generator
@@ -139,8 +140,14 @@ int Woof_Random(void);
 void M_ClearRandom(void);
 
 // mbf21: [XA] Common random formulas used by codepointers
-int P_RandomHitscanAngle(pr_class_t pr_class, fixed_t spread);
-int P_RandomHitscanSlope(pr_class_t pr_class, fixed_t spread);
+int P_RandomHitscanAngle(pr_class_t pr_class, fixed_t spread, boolean player_attack);
+int P_RandomHitscanSlope(pr_class_t pr_class, fixed_t spread, boolean player_attack);
+
+// -worstrng: adversarial RNG for combat rolls (see m_random.c).
+extern boolean worstrng;
+int P_RiggedRoll(pr_class_t pr_class, int rigged, boolean apply);
+int P_RiggedMod(pr_class_t pr_class, int mod, boolean player_attack);
+int P_RiggedSpread(pr_class_t pr_class, boolean player_attack);
 
 #endif
 
