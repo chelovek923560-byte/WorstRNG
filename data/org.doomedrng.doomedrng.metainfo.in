@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<component type="desktop">
+  <id>org.doomedrng.doomedrng</id>
+  <launchable type="desktop-id">org.doomedrng.doomedrng.desktop</launchable>
+  <name>DOOMedRNG</name>
+  <summary>Doom with the worst possible luck</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0+</project_license>
+  <developer id="org.doomedrng">
+    <name>DOOMedRNG</name>
+  </developer>
+  <description>
+    <p>
+      DOOMedRNG is a modified version of the Woof source port that lets you
+      rig the random number generator against you (or for you). Every rigged
+      outcome is one that the unmodified game could also have produced.
+    </p>
+    <p>
+      It is based on Woof by Fabian Greffrath and contributors, which in turn
+      is a continuation of Lee Killough's Doom source port MBF.
+    </p>
+  </description>
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-fantasy">intense</content_attribute>
+    <content_attribute id="violence-realistic">intense</content_attribute>
+    <content_attribute id="violence-bloodshed">intense</content_attribute>
+    <content_attribute id="violence-desecration">intense</content_attribute>
+    <content_attribute id="social-chat">intense</content_attribute>
+  </content_rating>
+  <releases>
+    <release version="@PROJECT_VERSION@" date="@PROJECT_DATE@"/>
+  </releases>
+</component>

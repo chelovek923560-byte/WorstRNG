@@ -42,8 +42,8 @@ set(X_VCPKG_APPLOCAL_DEPS_INSTALL ON)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 project(
-    "Woof"
-    VERSION 16.0.0
+    "DOOMedRNG"
+    VERSION 1.0.0
     LANGUAGES C CXX
 )
 
@@ -67,15 +67,15 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 endif()
 
 # Hardcoded defines added to configure and resource files.
-set(PROJECT_COMPANY "Fabian Greffrath and contributors")
+set(PROJECT_COMPANY "DOOMedRNG, based on Woof by Fabian Greffrath and contributors")
 set(PROJECT_COPYRIGHT "Copyright (C) 1993-2026")
 set(PROJECT_LICENSE "GNU General Public License, version 2")
 set(PROJECT_STRING "${PROJECT_NAME} ${PROJECT_VERSION}")
-set(PROJECT_SHORTNAME "woof")
-set(PROJECT_APPID "io.github.fabiangreffrath.woof")
-set(PROJECT_APPID_SETUP "io.github.fabiangreffrath.woof-setup")
-set(BASE_PK3 "woof.pk3")
-set(WOOF_ICON "woof.ico")
+set(PROJECT_SHORTNAME "doomedrng")
+set(PROJECT_APPID "org.doomedrng.doomedrng")
+set(PROJECT_APPID_SETUP "org.doomedrng.doomedrng-setup")
+set(BASE_PK3 "doomedrng.pk3")
+set(WOOF_ICON "doomedrng.ico")
 set(SETUP_ICON "setup.ico")
 set(PROJECT_VERSION_RC
     "${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR},${PROJECT_VERSION_PATCH},0")

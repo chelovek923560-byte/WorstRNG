@@ -1,11 +1,11 @@
-include(WoofSettings)
+include(DoomedRngSettings)
 
 add_library(setup STATIC
             execute.c           execute.h
             mainmenu.c
             multiplayer.c       multiplayer.h)
 
-target_woof_settings(setup)
+target_doomedrng_settings(setup)
 
 target_include_directories(setup
                            INTERFACE "."

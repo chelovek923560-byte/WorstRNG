@@ -98,7 +98,7 @@ static const char *params_with_args[] = {
 "-statdump",
 };
 
-#define HELP_STRING "Usage: woof [options] \n\
+#define HELP_STRING "Usage: doomedrng [options] \n\
 \n\
 General options: \n\
   -file <files>  Load the specified PWAD files.\n\

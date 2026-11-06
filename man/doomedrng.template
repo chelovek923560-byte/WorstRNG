@@ -1,0 +1,47 @@
+.TH @PROJECT_SHORTNAME@ 6
+.SH NAME
+@PROJECT_SHORTNAME@ \- Doom with the worst possible luck, a modified Woof source port
+.SH SYNOPSIS
+.B @PROJECT_SHORTNAME@
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.PP
+@PROJECT_NAME@ is a modified version of the Woof source port, which is a
+continuation of Lee Killough's Doom source port MBF. It adds settings that
+rig the random number generator against the player, using only outcomes that
+the unmodified game could also have produced.
+.br
+@content
+.SH IWAD SEARCH PATHS
+@include iwad_paths.man
+.SH FILES
+.TP
+\fB$HOME/.local/share/@PROJECT_SHORTNAME@.cfg\fR
+The main configuration file for @PROJECT_NAME@.  See \fBdefault.cfg\fR(5).
+.TP
+\fB$HOME/.local/share/@PROJECT_SHORTNAME@/@PROJECT_SHORTNAME@sav*.dsg\fR
+Savegame files.
+.TP
+\fB$HOME/.local/share/@PROJECT_SHORTNAME@/tranmaps/\fR
+Cached translucency tables.
+.TP
+\fB/usr/share/@PROJECT_SHORTNAME@/autoload\fR, \fB$HOME/.local/share/@PROJECT_SHORTNAME@/autoload/\fR
+WAD files and DEH patches in the subdirectories of these paths are added
+automatically when a WAD file of the corresponding name is loaded.
+.SH SEE ALSO
+\fB@PROJECT_SHORTNAME@-setup\fR(6),
+.SH AUTHOR
+@PROJECT_NAME@ is based on Woof, written and maintained by Fabian Greffrath and
+contributors.  Woof is based on the MBF and WinMBF source codes, released by Lee Killough and Team Eternity,
+respectively, and on the LinuxDoom source code, released by Id Software.
+.SH COPYRIGHT
+Copyright \(co id Software Inc;
+Copyright \(co 1999 id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman;
+Copyright \(co 2004 James Haley;
+Copyright \(co 2005-2016 Simon Howard;
+Copyright \(co 2020-2022 Fabian Greffrath;
+Copyright \(co 2020-2022 Roman Fomin.
+.br
+This is free software.  You may redistribute copies of it under the terms of
+the GNU General Public License <http://www.gnu.org/licenses/gpl.html>.
+There is NO WARRANTY, to the extent permitted by law.

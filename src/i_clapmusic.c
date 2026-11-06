@@ -131,8 +131,8 @@ static void InitClapHost(void)
     clap_host.clap_version = CLAP_VERSION;
     clap_host.host_data = NULL;
     clap_host.name = PROJECT_NAME;
-    clap_host.vendor = "The Woof Project Team";
-    clap_host.url = "https://github.com/fabiangreffrath/woof";
+    clap_host.vendor = "DOOMedRNG";
+    clap_host.url = "";
     clap_host.version = "1.0";
     clap_host.get_extension = ClapHostGetExtension;
     clap_host.request_restart = ClapHostRequestRestart;

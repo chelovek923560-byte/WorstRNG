@@ -1,7 +1,7 @@
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
-set(CPACK_PACKAGE_VENDOR "Fabian Greffrath and contributors")
+set(CPACK_PACKAGE_VENDOR "DOOMedRNG, based on Woof by Fabian Greffrath and contributors")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
-    "Continuation of the Boom/MBF bloodline of Doom source ports.")
+    "Doom with the worst possible luck (modified Woof source port).")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY ${CPACK_PACKAGE_NAME})
 set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})

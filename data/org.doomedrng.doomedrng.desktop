@@ -1,0 +1,16 @@
+[Desktop Entry]
+Name=DOOMedRNG
+Exec=doomedrng %F
+Icon=doomedrng
+TryExec=doomedrng
+Type=Application
+Comment=Doom with the worst possible luck
+Categories=Game;ActionGame;
+MimeType=application/x-doom-wad;
+Keywords=first;person;shooter;vanilla;doom;boom;mbf;rng;
+StartupWMClass=org.doomedrng.doomedrng
+Actions=launch-setup
+
+[Desktop Action launch-setup]
+Name=DOOMedRNG Setup
+Exec=doomedrng -setup

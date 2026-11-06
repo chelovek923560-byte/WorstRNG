@@ -1,7 +1,7 @@
 include(GNUInstallDirs)
 
-configure_file(WoofInstall.cmake.in WoofInstall.cmake ESCAPE_QUOTES @ONLY)
-install(SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/WoofInstall.cmake")
+configure_file(DoomedRngInstall.cmake.in DoomedRngInstall.cmake ESCAPE_QUOTES @ONLY)
+install(SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/DoomedRngInstall.cmake")
 
 if(WIN32)
     install(FILES CMDLINE.txt DESTINATION .)
