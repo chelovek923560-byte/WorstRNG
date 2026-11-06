@@ -244,7 +244,7 @@ jobs:
       - name: Test
         run: |
           cd demotest
-          python demotest --jobs 4 --port ../build/src/woof
+          python demotest --jobs 4 --port ../build/src/doomedrng
 
       - name: Save demotest cache
         if: steps.cache-demotest.outputs.cache-hit != 'true' && github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -256,10 +256,10 @@ jobs:
       - name: Universal Package (macOS)
         if: matrix.config.name == 'macOS uni (vcpkg)'
         run: |
-          lipo build/src/woof build-x64/src/woof -create -output woof
-          lipo build/src/woof-setup build-x64/src/woof-setup -create -output woof-setup
-          rm build/src/woof
-          rm build/src/woof-setup
+          lipo build/src/doomedrng build-x64/src/woof -create -output woof
+          lipo build/src/doomedrng-setup build-x64/src/woof-setup -create -output woof-setup
+          rm build/src/doomedrng
+          rm build/src/doomedrng-setup
           mv woof build/src
           mv woof-setup build/src
 
