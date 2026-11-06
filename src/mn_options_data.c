@@ -1067,7 +1067,7 @@ static mn_item_t rng_player_items[] = {
     MN_CHOICE_ACT(
         "Preset", "rng_preset", rng_preset_strings, 8,
         MN_OptionsApplyRNGPreset,
-        "Preset:\n\nSets all settings (this tab and Enemy) at once.\n\n"
+        "Preset:\n\nSets every setting on all tabs at once.\n\n"
         "Default: normal vanilla rolls.\n"
         "Best: every roll goes your way.\n"
         "Worst: every roll goes against you.\n\n"
@@ -1144,10 +1144,14 @@ static mn_item_t rng_enemy_items[] = {
         "Enemy Accuracy", "rng_enemy_accuracy", rng_strings, 8,
         MN_OptionsUpdateRNGPreset,
         "Enemy Accuracy:\n\nSpread of monster hitscan attacks "
-        "(zombiemen, shotgunners, chaingunners, Spider Mastermind).\n\n"
+        "(zombiemen, shotgunners, chaingunners, Spider Mastermind). "
+        "Also the random aim wobble of monsters when you are invisible "
+        "(hitscan and fireballs).\n\n"
         "Default: normal.\n"
-        "Best: their bullets that can miss you, miss.\n"
-        "Worst: their bullets that can hit you, hit."),
+        "Best: their bullets that can miss you, miss. Invisible: aimed "
+        "as far off as possible.\n"
+        "Worst: their bullets that can hit you, hit. Invisible: aimed "
+        "straight at you."),
     MN_CHOICE_ACT(
         "Enemy Aggression", "rng_enemy_aggression", rng_strings, 8,
         MN_OptionsUpdateRNGPreset,
@@ -1197,9 +1201,45 @@ static mn_item_t rng_enemy_items[] = {
     MN_END
 };
 
+static mn_item_t rng_world_items[] = {
+    MN_TITLE("Hazards"),
+    MN_CHOICE_ACT(
+        "Radiation Suit", "rng_radiation_suit", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Radiation Suit:\n\nOn the worst damaging floors a radiation suit "
+        "fails about 2% of the time (roughly once in 50 damage ticks).\n\n"
+        "Default: normal.\n"
+        "Best: the suit never fails.\n"
+        "Worst: the suit fails on every damage tick, so it protects "
+        "against nothing there."),
+    MN_GAP(6),
+    MN_TITLE("Bosses and respawns"),
+    MN_CHOICE_ACT(
+        "Icon of Sin", "rng_icon_of_sin", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Icon of Sin:\n\nWhich monster the Icon of Sin spawns "
+        "(Doom 2 MAP30).\n\n"
+        "Default: normal mix.\n"
+        "Best: it only spawns Imps.\n"
+        "Worst: it only spawns Arch-Viles."),
+    MN_CHOICE_ACT(
+        "Monster Respawn", "rng_monster_respawn", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Monster Respawn:\n\nOnly matters when monsters respawn "
+        "(Nightmare, or the -respawn option). A corpse gets a chance "
+        "to come back every second or so after it has lain there for "
+        "12 seconds.\n\n"
+        "Default: normal (a small chance each time).\n"
+        "Best: corpses never come back.\n"
+        "Worst: they come back at the first chance."),
+    MN_RESET,
+    MN_END
+};
+
 static mn_page_t rng_pages[] = {
     {.tab = "Player", .items = rng_player_items},
     {.tab = "Enemy", .items = rng_enemy_items},
+    {.tab = "World", .items = rng_world_items},
 };
 
 mn_menu_t rng_menu = {

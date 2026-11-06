@@ -1294,8 +1294,9 @@ void A_FaceTarget(mobj_t *actor)
                                  actor->target->x, actor->target->y);
   if (actor->target->flags & MF_SHADOW)
     { // killough 5/5/98: remove dependence on order of evaluation:
-      int t = P_Random(pr_facetarget);
-      actor->angle += (t-P_Random(pr_facetarget))<<21;
+      int t = P_SpreadRoll(pr_facetarget);
+      t = P_FuzzRoll(t, actor->target->player != NULL);
+      actor->angle += shiftleft32(t, 21);
     }
 }
 
@@ -2518,7 +2519,7 @@ void A_SpawnFly(mobj_t *mo)
   S_StartSound(fog, sfx_telept);
 
   // Randomly select monster to spawn.
-  r = P_Random(pr_spawnfly);
+  r = P_IconRoll();
 
   // Probability distribution (kind of :), decreasing likelihood.
   if ( r<50 )

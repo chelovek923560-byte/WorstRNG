@@ -172,9 +172,12 @@ extern int rng_enemy_aggression;
 extern int rng_enemy_pathing;
 extern int rng_enemy_focus;
 extern int rng_revenant_homing;
+extern int rng_radiation_suit;
+extern int rng_icon_of_sin;
+extern int rng_monster_respawn;
 
 // All rigged settings, in menu order (used by the preset).
-#define RNG_NUM_SETTINGS 13
+#define RNG_NUM_SETTINGS 16
 extern int *const rng_settings[RNG_NUM_SETTINGS];
 
 void M_BindRNGVariables(void);
@@ -207,6 +210,20 @@ int P_PathingRoll(void);
 // Replaces "P_Random(pr_trywalk) & 15", the number of steps a monster walks
 // before it thinks again. (It may only start an attack when this reaches 0.)
 int P_MoveCountRoll(void);
+
+// Replaces "P_Random(pr_slimehurt)" for a player wearing a radiation suit on
+// a damaging floor: the suit fails when the roll is below 5.
+int P_SuitRoll(void);
+
+// Replaces "P_Random(pr_spawnfly)", which picks what the Icon of Sin spawns.
+int P_IconRoll(void);
+
+// Replaces "P_Random(pr_respawn)": a corpse respawns when the roll is 4 or less.
+int P_RespawnRoll(void);
+
+// The random turn a monster gets when its target is invisible (fuzzy).
+// roll is the vanilla (-255..255) value; only a player target is rigged.
+int P_FuzzRoll(int roll, boolean target_is_player);
 
 // Revenant missiles. A_Tracer runs every 2 tics but only acts (homing, smoke)
 // on game tics that are a multiple of 4. A missile therefore either always

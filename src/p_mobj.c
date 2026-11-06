@@ -858,7 +858,7 @@ void P_MobjThinker (mobj_t* mobj)
     if (mobj->flags & MF_COUNTKILL && skill_info.respawn_time &&
 	++mobj->movecount >= skill_info.respawn_time * 35
   && !(leveltime & 31) &&
-	P_Random (pr_respawn) <= 4)
+	P_RespawnRoll() <= 4)
       P_NightmareRespawn(mobj);          // check for nightmare respawn
 }
 
@@ -1681,8 +1681,9 @@ mobj_t* P_SpawnMissile(mobj_t* source,mobj_t* dest,mobjtype_t type)
   // fuzzy player
   if (dest->flags & MF_SHADOW)
     {  // killough 5/5/98: remove dependence on order of evaluation:
-      int t = P_Random(pr_shadow);
-      an += (t - P_Random(pr_shadow))<<20;
+      int t = P_SpreadRoll(pr_shadow);
+      t = P_FuzzRoll(t, dest->player != NULL);
+      an += shiftleft32(t, 20);
     }
 
   th->angle = an;

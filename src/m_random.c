@@ -227,6 +227,9 @@ int rng_enemy_aggression = RNG_DEFAULT;
 int rng_enemy_pathing = RNG_DEFAULT;
 int rng_enemy_focus = RNG_DEFAULT;
 int rng_revenant_homing = RNG_DEFAULT;
+int rng_radiation_suit = RNG_DEFAULT;
+int rng_icon_of_sin = RNG_DEFAULT;
+int rng_monster_respawn = RNG_DEFAULT;
 
 int *const rng_settings[RNG_NUM_SETTINGS] = {
   &rng_player_melee_damage, &rng_player_bullet_damage,
@@ -234,6 +237,7 @@ int *const rng_settings[RNG_NUM_SETTINGS] = {
   &rng_player_accuracy, &rng_melee_accuracy, &rng_enemy_accuracy,
   &rng_enemy_refire, &rng_enemy_aggression,
   &rng_enemy_pathing, &rng_enemy_focus, &rng_revenant_homing,
+  &rng_radiation_suit, &rng_icon_of_sin, &rng_monster_respawn,
 };
 
 void M_BindRNGVariables(void)
@@ -266,6 +270,12 @@ void M_BindRNGVariables(void)
     "Enemy focus: steps before monsters re-aim (0 = Default; 1 = Best; 2 = Worst)");
   BIND_NUM(rng_revenant_homing, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
     "Revenant missile homing (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_radiation_suit, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Radiation suit failure on damaging floors (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_icon_of_sin, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Icon of Sin: which monster it spawns (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_monster_respawn, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Monster respawn (with -respawn or Nightmare) (0 = Default; 1 = Best; 2 = Worst)");
 }
 
 int P_DamageRoll(pr_class_t pr_class, int mod, rng_dmg_kind_t kind)
@@ -339,6 +349,69 @@ int P_MoveCountRoll(void)
       return 15;    // walks the longest stretch before thinking again
     case RNG_WORST:
       return 0;     // thinks every step, and may attack at once
+    default:
+      return roll;
+  }
+}
+
+int P_SuitRoll(void)
+{
+  const int roll = P_Random(pr_slimehurt);
+
+  switch (CRITICAL(rng_radiation_suit))
+  {
+    case RNG_BEST:
+      return 255;   // the suit never fails
+    case RNG_WORST:
+      return 0;     // the suit fails on every damage tick
+    default:
+      return roll;
+  }
+}
+
+int P_IconRoll(void)
+{
+  const int roll = P_Random(pr_spawnfly);
+
+  switch (CRITICAL(rng_icon_of_sin))
+  {
+    case RNG_BEST:
+      return 0;     // an Imp (the weakest thing on its list)
+    case RNG_WORST:
+      return 160;   // an Arch-Vile (rolls 160 and 161)
+    default:
+      return roll;
+  }
+}
+
+int P_RespawnRoll(void)
+{
+  const int roll = P_Random(pr_respawn);
+
+  switch (CRITICAL(rng_monster_respawn))
+  {
+    case RNG_BEST:
+      return 255;   // never respawns
+    case RNG_WORST:
+      return 0;     // respawns as soon as it is allowed to
+    default:
+      return roll;
+  }
+}
+
+int P_FuzzRoll(int roll, boolean target_is_player)
+{
+  if (!target_is_player)
+    return roll;
+
+  // Same setting as the hitscan spread (Enemy Accuracy): when you are
+  // invisible, Worst aims straight at you, Best aims as far off as possible.
+  switch (CRITICAL(rng_enemy_accuracy))
+  {
+    case RNG_BEST:
+      return 255;
+    case RNG_WORST:
+      return 0;
     default:
       return roll;
   }
