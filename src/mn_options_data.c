@@ -1063,25 +1063,66 @@ static const char *rng_strings[] = {"Default", "Best", "Worst"};
 
 static const char *rng_preset_strings[] = {"Default", "Best", "Worst", "Custom"};
 
-static mn_item_t rng_items[] = {
+static mn_item_t rng_player_items[] = {
     MN_CHOICE_ACT(
         "Preset", "rng_preset", rng_preset_strings, 8,
         MN_OptionsApplyRNGPreset,
-        "Preset:\n\nSets all settings below at once.\n\n"
+        "Preset:\n\nSets all settings (this tab and Enemy) at once.\n\n"
         "Default: normal vanilla rolls.\n"
         "Best: every roll goes your way.\n"
         "Worst: every roll goes against you.\n\n"
-        "Shows Custom when the settings below differ.\n"
+        "Shows Custom when the settings differ.\n"
         "Ignored in demos and netgames."),
     MN_GAP(6),
-    MN_TITLE("Rolls"),
+    MN_TITLE("Damage"),
     MN_CHOICE_ACT(
-        "Player Damage", "rng_player_damage", rng_strings, 8,
+        "Melee Damage", "rng_player_melee_damage", rng_strings, 8,
         MN_OptionsUpdateRNGPreset,
-        "Player Damage:\n\nDamage rolls of your weapons.\n\n"
+        "Melee Damage:\n\nFist and chainsaw damage rolls.\n\n"
         "Default: normal.\n"
         "Best: always the highest roll.\n"
         "Worst: always the lowest roll."),
+    MN_CHOICE_ACT(
+        "Bullet Damage", "rng_player_bullet_damage", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Bullet Damage:\n\nPistol, shotguns and chaingun damage rolls.\n\n"
+        "Default: normal.\n"
+        "Best: always the highest roll.\n"
+        "Worst: always the lowest roll."),
+    MN_CHOICE_ACT(
+        "Projectile Damage", "rng_player_projectile_damage", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Projectile Damage:\n\nRocket, plasma and BFG damage rolls.\n\n"
+        "Default: normal.\n"
+        "Best: always the highest roll.\n"
+        "Worst: always the lowest roll."),
+    MN_GAP(6),
+    MN_TITLE("Accuracy"),
+    MN_CHOICE_ACT(
+        "Bullet Accuracy", "rng_player_accuracy", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Bullet Accuracy:\n\nSpread of your hitscan weapons "
+        "(pistol, shotguns, chaingun).\n\n"
+        "Default: normal.\n"
+        "Best: bullets that can hit, hit.\n"
+        "Worst: bullets that can miss, miss.\n\n"
+        "Shots that cannot miss (the first pistol or chaingun shot after "
+        "releasing the trigger) still hit."),
+    MN_CHOICE_ACT(
+        "Melee Accuracy", "rng_melee_accuracy", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Melee Accuracy:\n\nThe small random turn of the fist and "
+        "chainsaw swing.\n\n"
+        "Default: normal.\n"
+        "Best: the swing lands whenever it can.\n"
+        "Worst: the swing misses whenever it can.\n\n"
+        "Only matters when the target is near the edge of your aim."),
+    MN_RESET,
+    MN_END
+};
+
+static mn_item_t rng_enemy_items[] = {
+    MN_TITLE("Damage"),
     MN_CHOICE_ACT(
         "Enemy Damage", "rng_enemy_damage", rng_strings, 8,
         MN_OptionsUpdateRNGPreset,
@@ -1095,16 +1136,10 @@ static mn_item_t rng_items[] = {
         "Enemy Stagger:\n\nWhether monsters flinch when hit.\n\n"
         "Default: normal pain chance.\n"
         "Best: monsters always flinch.\n"
-        "Worst: monsters never flinch (except those that always do in vanilla, like Lost Souls)."),
-    MN_CHOICE_ACT(
-        "Player Accuracy", "rng_player_accuracy", rng_strings, 8,
-        MN_OptionsUpdateRNGPreset,
-        "Player Accuracy:\n\nSpread of your hitscan weapons "
-        "(pistol, shotguns, chaingun).\n\n"
-        "Default: normal.\n"
-        "Best: bullets that can hit, hit.\n"
-        "Worst: bullets that can miss, miss.\n\n"
-        "Shots that cannot miss (the first pistol shot) still hit."),
+        "Worst: monsters never flinch (except those that always do in "
+        "vanilla, like Lost Souls)."),
+    MN_GAP(6),
+    MN_TITLE("Shooting"),
     MN_CHOICE_ACT(
         "Enemy Accuracy", "rng_enemy_accuracy", rng_strings, 8,
         MN_OptionsUpdateRNGPreset,
@@ -1113,12 +1148,58 @@ static mn_item_t rng_items[] = {
         "Default: normal.\n"
         "Best: their bullets that can miss you, miss.\n"
         "Worst: their bullets that can hit you, hit."),
+    MN_CHOICE_ACT(
+        "Enemy Aggression", "rng_enemy_aggression", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Enemy Aggression:\n\nWhether a monster that can see you "
+        "decides to open fire (instead of just moving).\n\n"
+        "Default: normal.\n"
+        "Best: they hold their fire unless you are very close.\n"
+        "Worst: they fire at every chance."),
+    MN_CHOICE_ACT(
+        "Enemy Refire", "rng_enemy_refire", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Enemy Refire:\n\nChaingunners and Spider Masterminds fire "
+        "as long as they can see you. This roll decides whether they "
+        "also keep shooting after losing sight of you.\n\n"
+        "Default: normal.\n"
+        "Best: they keep firing at the spot where you were, forever.\n"
+        "Worst: they stop the moment they lose sight, and come after you."),
+    MN_CHOICE_ACT(
+        "Revenant Homing", "rng_revenant_homing", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Revenant Homing:\n\nIn vanilla, half of the Revenant missiles "
+        "home in and half never do, depending on the game tick they were "
+        "fired on.\n\n"
+        "Default: normal.\n"
+        "Best: the missiles never home.\n"
+        "Worst: the missiles always home."),
+    MN_GAP(6),
+    MN_TITLE("Movement"),
+    MN_CHOICE_ACT(
+        "Enemy Pathing", "rng_enemy_pathing", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Enemy Pathing:\n\nHow directly monsters head for you when "
+        "the straight diagonal is blocked.\n\n"
+        "Default: normal.\n"
+        "Best: they always try the less direct way first.\n"
+        "Worst: they always take the most direct way."),
+    MN_CHOICE_ACT(
+        "Enemy Focus", "rng_enemy_focus", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Enemy Focus:\n\nHow many steps a monster walks before it "
+        "re-aims at you. It can only start an attack when this "
+        "runs out.\n\n"
+        "Default: normal (0 to 15 steps).\n"
+        "Best: always 15 steps, so it re-aims and attacks rarely.\n"
+        "Worst: 0 steps, so it re-aims and may attack on every move."),
     MN_RESET,
     MN_END
 };
 
 static mn_page_t rng_pages[] = {
-    {.items = rng_items}
+    {.tab = "Player", .items = rng_player_items},
+    {.tab = "Enemy", .items = rng_enemy_items},
 };
 
 mn_menu_t rng_menu = {

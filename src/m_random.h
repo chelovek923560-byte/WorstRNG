@@ -159,17 +159,60 @@ typedef enum
 } rng_mode_t;
 
 extern int rng_preset;
-extern int rng_player_damage;
+extern int rng_player_melee_damage;
+extern int rng_player_bullet_damage;
+extern int rng_player_projectile_damage;
 extern int rng_enemy_damage;
 extern int rng_enemy_stagger;
 extern int rng_player_accuracy;
 extern int rng_enemy_accuracy;
+extern int rng_melee_accuracy;
+extern int rng_enemy_refire;
+extern int rng_enemy_aggression;
+extern int rng_enemy_pathing;
+extern int rng_enemy_focus;
+extern int rng_revenant_homing;
+
+// All rigged settings, in menu order (used by the preset).
+#define RNG_NUM_SETTINGS 13
+extern int *const rng_settings[RNG_NUM_SETTINGS];
 
 void M_BindRNGVariables(void);
 
+// Who is rolling the damage. Each player weapon type has its own setting.
+typedef enum
+{
+  DMG_MONSTER,     // any monster attack
+  DMG_MELEE,       // player fist, chainsaw
+  DMG_BULLET,      // player pistol, shotguns, chaingun
+  DMG_PROJECTILE   // player rockets, plasma, BFG
+} rng_dmg_kind_t;
+
 // Replaces "P_Random(c) % mod" in a damage formula. Returns 0..mod-1.
-// from_player: the attack was made by the player (otherwise by a monster).
-int P_DamageRoll(pr_class_t pr_class, int mod, boolean from_player);
+int P_DamageRoll(pr_class_t pr_class, int mod, rng_dmg_kind_t kind);
+
+// Replace "P_Random(pr_cposrefire/pr_spidrefire) < threshold" in the
+// chaingunner / Spider Mastermind refire code. A low roll means "keep firing
+// without looking whether the target is still there".
+int P_RefireRoll(pr_class_t pr_class);
+
+// Replaces "P_Random(pr_missrange)" in the monster's "should I shoot?" check.
+// A low roll means "don't shoot yet" (when the target is not point blank).
+int P_AggressionRoll(void);
+
+// Replaces "P_Random(pr_newchase)" in the monster's choice of direction. In
+// vanilla, a roll above 200 makes it try the less direct axis first.
+int P_PathingRoll(void);
+
+// Replaces "P_Random(pr_trywalk) & 15", the number of steps a monster walks
+// before it thinks again. (It may only start an attack when this reaches 0.)
+int P_MoveCountRoll(void);
+
+// Revenant missiles. A_Tracer runs every 2 tics but only acts (homing, smoke)
+// on game tics that are a multiple of 4. A missile therefore either always
+// acts or never does, depending on the parity of the tic it was fired on.
+// Returns RNG_DEFAULT, RNG_BEST (never homes) or RNG_WORST (always homes).
+int P_RevenantPhaseMode(void);
 
 // The vanilla "P_Random(c) - P_Random(c)" spread roll (-255..255). Draws the
 // same two numbers in the same order as the code it replaces.

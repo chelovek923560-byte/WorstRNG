@@ -256,7 +256,7 @@ static boolean P_CheckMissileRange(mobj_t *actor)
   if (actor->flags2 & MF2_HIGHERMPROB && dist > 160)
     dist = 160;
 
-  if (P_Random(pr_missrange) < dist)
+  if (P_AggressionRoll() < dist)
     return false;
 
   if (actor->flags & MF_FRIEND && P_HitFriend(actor))
@@ -539,7 +539,7 @@ static boolean P_TryWalk(mobj_t *actor)
 {
   if (!P_SmartMove(actor))
     return false;
-  actor->movecount = P_Random(pr_trywalk)&15;
+  actor->movecount = P_MoveCountRoll();
   return true;
 }
 
@@ -576,7 +576,7 @@ static void P_DoNewChaseDir(mobj_t *actor, fixed_t deltax, fixed_t deltay)
     return;
 
   // try other directions
-  if (P_Random(pr_newchase) > 200 || abs(deltay)>abs(deltax))
+  if (P_PathingRoll() > 200 || abs(deltay)>abs(deltax))
     tdir = xdir, xdir = ydir, ydir = tdir;
 
   if ((xdir == turnaround ? xdir = DI_NODIR : xdir) != DI_NODIR &&
@@ -1322,7 +1322,7 @@ void A_PosAttack(mobj_t *actor)
   hs.hmax = ((int64_t)255) << 20;
   P_HitscanRolls(&hs, &h, NULL);
   angle += shiftleft32(h, 20);
-  damage = (P_DamageRoll(pr_posattack, 5, false) + 1)*3;
+  damage = (P_DamageRoll(pr_posattack, 5, DMG_MONSTER) + 1)*3;
   P_LineAttack(actor, angle, MISSILERANGE, slope, damage);
 }
 
@@ -1345,7 +1345,7 @@ void A_SPosAttack(mobj_t* actor)
       int angle;
       P_HitscanRolls(&hs, &h, NULL);
       angle = bangle + shiftleft32(h, 20);
-      int damage = ((P_DamageRoll(pr_sposattack, 5, false))+1)*3;
+      int damage = ((P_DamageRoll(pr_sposattack, 5, DMG_MONSTER))+1)*3;
       P_LineAttack(actor, angle, MISSILERANGE, slope, damage);
     }
 }
@@ -1368,7 +1368,7 @@ void A_CPosAttack(mobj_t *actor)
   hs.hmax = ((int64_t)255) << 20;
   P_HitscanRolls(&hs, &h, NULL);
   angle = bangle + shiftleft32(h, 20);
-  damage = ((P_DamageRoll(pr_cposattack, 5, false))+1)*3;
+  damage = ((P_DamageRoll(pr_cposattack, 5, DMG_MONSTER))+1)*3;
   P_LineAttack(actor, angle, MISSILERANGE, slope, damage);
 }
 
@@ -1382,7 +1382,7 @@ void A_CPosRefire(mobj_t *actor)
     goto stop;
 
   // killough 11/98: prevent refiring on friends continuously
-  if (P_Random(pr_cposrefire) < 40)
+  if (P_RefireRoll(pr_cposrefire) < 40)
   {
     if (actor->target && actor->flags & actor->target->flags & MF_FRIEND)
       goto stop;
@@ -1404,7 +1404,7 @@ void A_SpidRefire(mobj_t* actor)
   if (actor->flags & MF_FRIEND && P_HitFriend(actor))
     goto stop;
 
-  if (P_Random(pr_spidrefire) < 10)
+  if (P_RefireRoll(pr_spidrefire) < 10)
     return;
 
   // killough 11/98: prevent refiring on friends continuously
@@ -1435,7 +1435,7 @@ void A_TroopAttack(mobj_t *actor)
     {
       int damage;
       S_StartSound(actor, sfx_claw);
-      damage = (P_DamageRoll(pr_troopattack, 8, false)+1)*3;
+      damage = (P_DamageRoll(pr_troopattack, 8, DMG_MONSTER)+1)*3;
       P_DamageMobjBy(actor->target, actor, actor, damage, MOD_Melee);
       return;
     }
@@ -1449,7 +1449,7 @@ void A_SargAttack(mobj_t *actor)
   A_FaceTarget(actor);
   if (P_CheckMeleeRange(actor))
     {
-      int damage = ((P_DamageRoll(pr_sargattack, 10, false))+1)*4;
+      int damage = ((P_DamageRoll(pr_sargattack, 10, DMG_MONSTER))+1)*4;
       P_DamageMobjBy(actor->target, actor, actor, damage, MOD_Melee);
     }
 }
@@ -1461,7 +1461,7 @@ void A_HeadAttack(mobj_t *actor)
   A_FaceTarget (actor);
   if (P_CheckMeleeRange(actor))
     {
-      int damage = (P_DamageRoll(pr_headattack, 6, false)+1)*10;
+      int damage = (P_DamageRoll(pr_headattack, 6, DMG_MONSTER)+1)*10;
       P_DamageMobjBy(actor->target, actor, actor, damage, MOD_Melee);
       return;
     }
@@ -1484,7 +1484,7 @@ void A_BruisAttack(mobj_t *actor)
     {
       int damage;
       S_StartSound(actor, sfx_claw);
-      damage = (P_DamageRoll(pr_bruisattack, 8, false)+1)*10;
+      damage = (P_DamageRoll(pr_bruisattack, 8, DMG_MONSTER)+1)*10;
       P_DamageMobjBy(actor->target, actor, actor, damage, MOD_Melee);
       return;
     }
@@ -1535,6 +1535,21 @@ void A_Tracer(mobj_t *actor)
   // leveltime would have been better to use to start with in Doom, but
   // since old demos were recorded using gametic, we must stick with it,
   // and improvise around it (using leveltime causes desync across levels).
+
+  // Revenant Homing setting: shift this missile by one tic so that it runs
+  // on the other tic parity from now on (what firing it one tic earlier or
+  // later would have done). Best: odd tics, so it never homes or smokes.
+  // Worst: even tics, so it homes every 4 tics.
+  {
+    const int mode = P_RevenantPhaseMode();
+
+    if (mode != RNG_DEFAULT && actor->tics > 0 &&
+        ((gametic - boom_basetic) & 1) == (mode == RNG_BEST ? 0 : 1))
+    {
+      actor->tics++;
+      return;
+    }
+  }
 
   if ((gametic - boom_basetic) & 3)
     return;
@@ -1611,7 +1626,7 @@ void A_SkelFist(mobj_t *actor)
   A_FaceTarget(actor);
   if (P_CheckMeleeRange(actor))
     {
-      int damage = ((P_DamageRoll(pr_skelfist, 10, false))+1)*6;
+      int damage = ((P_DamageRoll(pr_skelfist, 10, DMG_MONSTER))+1)*6;
       S_StartSound(actor, sfx_skepch);
       P_DamageMobjBy(actor->target, actor, actor, damage, MOD_Melee);
     }
@@ -2074,7 +2089,7 @@ void A_BetaSkullAttack(mobj_t *actor)
   S_StartSound(actor, actor->info->attacksound);
   }
   A_FaceTarget(actor);
-  damage = (P_DamageRoll(pr_skullfly, 8, false)+1)*actor->info->damage;
+  damage = (P_DamageRoll(pr_skullfly, 8, DMG_MONSTER)+1)*actor->info->damage;
   P_DamageMobj(actor->target, actor, actor, damage);
 }
 
@@ -2834,7 +2849,7 @@ void A_MonsterBulletAttack(mobj_t *actor)
 
   for (i = 0; i < numbullets; i++)
   {
-    damage = (P_DamageRoll(pr_mbf21, damagemod, false) + 1) * damagebase;
+    damage = (P_DamageRoll(pr_mbf21, damagemod, DMG_MONSTER) + 1) * damagebase;
     int h = P_SpreadRoll(pr_mbf21);
     int v = P_SpreadRoll(pr_mbf21);
     P_HitscanRolls(&hs, &h, &v);
@@ -2877,7 +2892,7 @@ void A_MonsterMeleeAttack(mobj_t *actor)
 
   S_StartSound(actor, hitsound);
 
-  damage = (P_DamageRoll(pr_mbf21, damagemod, false) + 1) * damagebase;
+  damage = (P_DamageRoll(pr_mbf21, damagemod, DMG_MONSTER) + 1) * damagebase;
   P_DamageMobjBy(actor->target, actor, actor, damage, MOD_Melee);
 }
 

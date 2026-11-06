@@ -214,18 +214,38 @@ int P_RandomHitscanSlope(pr_class_t pr_class, fixed_t spread)
 //
 
 int rng_preset = RNG_DEFAULT;
-int rng_player_damage = RNG_DEFAULT;
+int rng_player_melee_damage = RNG_DEFAULT;
+int rng_player_bullet_damage = RNG_DEFAULT;
+int rng_player_projectile_damage = RNG_DEFAULT;
 int rng_enemy_damage = RNG_DEFAULT;
 int rng_enemy_stagger = RNG_DEFAULT;
 int rng_player_accuracy = RNG_DEFAULT;
 int rng_enemy_accuracy = RNG_DEFAULT;
+int rng_melee_accuracy = RNG_DEFAULT;
+int rng_enemy_refire = RNG_DEFAULT;
+int rng_enemy_aggression = RNG_DEFAULT;
+int rng_enemy_pathing = RNG_DEFAULT;
+int rng_enemy_focus = RNG_DEFAULT;
+int rng_revenant_homing = RNG_DEFAULT;
+
+int *const rng_settings[RNG_NUM_SETTINGS] = {
+  &rng_player_melee_damage, &rng_player_bullet_damage,
+  &rng_player_projectile_damage, &rng_enemy_damage, &rng_enemy_stagger,
+  &rng_player_accuracy, &rng_melee_accuracy, &rng_enemy_accuracy,
+  &rng_enemy_refire, &rng_enemy_aggression,
+  &rng_enemy_pathing, &rng_enemy_focus, &rng_revenant_homing,
+};
 
 void M_BindRNGVariables(void)
 {
   BIND_NUM(rng_preset, RNG_DEFAULT, RNG_DEFAULT, RNG_PRESET_CUSTOM,
     "RNG preset (0 = Default; 1 = Best; 2 = Worst; 3 = Custom)");
-  BIND_NUM(rng_player_damage, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
-    "Player damage rolls (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_player_melee_damage, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Player melee (fist, chainsaw) damage rolls (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_player_bullet_damage, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Player bullet (pistol, shotguns, chaingun) damage rolls (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_player_projectile_damage, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Player projectile (rocket, plasma, BFG) damage rolls (0 = Default; 1 = Best; 2 = Worst)");
   BIND_NUM(rng_enemy_damage, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
     "Enemy damage rolls (0 = Default; 1 = Best; 2 = Worst)");
   BIND_NUM(rng_enemy_stagger, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
@@ -234,21 +254,115 @@ void M_BindRNGVariables(void)
     "Player hitscan accuracy (0 = Default; 1 = Best; 2 = Worst)");
   BIND_NUM(rng_enemy_accuracy, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
     "Enemy hitscan accuracy (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_melee_accuracy, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Player melee (fist, chainsaw) accuracy (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_enemy_refire, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Enemy refire rolls (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_enemy_aggression, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Enemy aggression: decision to shoot (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_enemy_pathing, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Enemy pathing: how directly monsters approach (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_enemy_focus, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Enemy focus: steps before monsters re-aim (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_revenant_homing, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Revenant missile homing (0 = Default; 1 = Best; 2 = Worst)");
 }
 
-int P_DamageRoll(pr_class_t pr_class, int mod, boolean from_player)
+int P_DamageRoll(pr_class_t pr_class, int mod, rng_dmg_kind_t kind)
 {
   // Always consume the roll, exactly like the vanilla code did.
   const int roll = P_Random(pr_class) % mod;
-  const int mode =
-    from_player ? CRITICAL(rng_player_damage) : CRITICAL(rng_enemy_damage);
+  int mode;
+
+  switch (kind)
+  {
+    case DMG_MELEE:
+      mode = CRITICAL(rng_player_melee_damage);
+      break;
+    case DMG_BULLET:
+      mode = CRITICAL(rng_player_bullet_damage);
+      break;
+    case DMG_PROJECTILE:
+      mode = CRITICAL(rng_player_projectile_damage);
+      break;
+    default:
+      mode = CRITICAL(rng_enemy_damage);
+      break;
+  }
 
   if (mode == RNG_DEFAULT)
     return roll;
 
   // Best: the player hits for the most and monsters hit for the least.
   // Worst: the other way around.
-  return ((mode == RNG_BEST) == from_player) ? mod - 1 : 0;
+  return ((mode == RNG_BEST) == (kind != DMG_MONSTER)) ? mod - 1 : 0;
+}
+
+int P_RefireRoll(pr_class_t pr_class)
+{
+  const int roll = P_Random(pr_class);
+
+  switch (CRITICAL(rng_enemy_refire))
+  {
+    case RNG_BEST:
+      return 0;     // the monster keeps blindly firing at where you were
+    case RNG_WORST:
+      return 255;   // it always checks, and goes after you the moment it
+                    // cannot see you
+    default:
+      return roll;
+  }
+}
+
+int P_PathingRoll(void)
+{
+  const int roll = P_Random(pr_newchase);
+
+  switch (CRITICAL(rng_enemy_pathing))
+  {
+    case RNG_BEST:
+      return 255;   // always tries the less direct axis first
+    case RNG_WORST:
+      return 0;     // always goes for the most direct route
+    default:
+      return roll;
+  }
+}
+
+int P_MoveCountRoll(void)
+{
+  const int roll = P_Random(pr_trywalk) & 15;
+
+  switch (CRITICAL(rng_enemy_focus))
+  {
+    case RNG_BEST:
+      return 15;    // walks the longest stretch before thinking again
+    case RNG_WORST:
+      return 0;     // thinks every step, and may attack at once
+    default:
+      return roll;
+  }
+}
+
+int P_RevenantPhaseMode(void)
+{
+  return CRITICAL(rng_revenant_homing);
+}
+
+int P_AggressionRoll(void)
+{
+  const int roll = P_Random(pr_missrange);
+
+  switch (CRITICAL(rng_enemy_aggression))
+  {
+    case RNG_BEST:
+      return 0;     // only shoots when you are very close
+    case RNG_WORST:
+      return 255;   // shoots whenever it has a clear view (the distance
+                    // threshold never goes above 200)
+    default:
+      return roll;
+  }
 }
 
 int P_SpreadRoll(pr_class_t pr_class)

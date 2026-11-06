@@ -74,6 +74,9 @@ typedef struct
   boolean from_player;   // shooter is the player (otherwise a monster)
   angle_t angle;         // aim before spread
   fixed_t slope;         // aim before spread
+  const int *setting;    // which setting applies (player/melee/enemy accuracy)
+  fixed_t distance;      // how far the bullet travels
+  boolean reaim;         // melee: the auto-aim is redone at the rolled angle
   int64_t hmax;          // angle offset (BAM) of a +255 horizontal roll; 0 = none
   int vshift;            // vertical offset is (roll << vshift); 0 = none
   int64_t vmax;          // mbf21: vertical angle (BAM) of a +255 roll; 0 = none
@@ -86,6 +89,8 @@ void    P_HitscanInit(hitscan_t *hs, struct mobj_s *source, boolean from_player,
                       angle_t angle, fixed_t slope);
 void    P_HitscanRolls(hitscan_t *hs, int *h, int *v); // v may be NULL
 angle_t P_HitscanAngle(const hitscan_t *hs, int h);
+// Melee auto-aim at an angle (prefers enemies over friends). Sets linetarget.
+fixed_t P_MeleeAimSlope(struct mobj_s *source, angle_t angle, fixed_t range);
 fixed_t P_HitscanSlope(const hitscan_t *hs, int v);
 
 // A trace with no side effects: returns the thing the bullet would hit.

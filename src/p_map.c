@@ -573,7 +573,7 @@ static boolean PIT_CheckThing(mobj_t *thing) // killough 3/26/98: make static
       // A flying skull is smacking something.
       // Determine damage amount, and the skull comes to a dead stop.
 
-      int damage = (P_DamageRoll(pr_skullfly, 8, false)+1)*tmthing->info->damage;
+      int damage = (P_DamageRoll(pr_skullfly, 8, DMG_MONSTER)+1)*tmthing->info->damage;
 
       P_DamageMobj (thing, tmthing, tmthing, damage);
 
@@ -636,7 +636,8 @@ static boolean PIT_CheckThing(mobj_t *thing) // killough 3/26/98: make static
       if (tmthing->flags2 & MF2_RIP)
       {
         damage = (P_DamageRoll(pr_mbf21, 4,
-                               tmthing->target && tmthing->target->player)
+                               tmthing->target && tmthing->target->player ?
+                               DMG_PROJECTILE : DMG_MONSTER)
                   + 2) * tmthing->info->damage;
         if (!(thing->flags & MF_NOBLOOD))
           P_SpawnBlood(tmthing->x, tmthing->y, tmthing->z, damage, thing);
@@ -652,7 +653,8 @@ static boolean PIT_CheckThing(mobj_t *thing) // killough 3/26/98: make static
       // damage / explode
 
       damage = (P_DamageRoll(pr_damage, 8,
-                             tmthing->target && tmthing->target->player)
+                             tmthing->target && tmthing->target->player ?
+                             DMG_PROJECTILE : DMG_MONSTER)
                 +1)*tmthing->info->damage;
       P_DamageMobj (thing, tmthing, tmthing->target, damage);
 
@@ -1830,6 +1832,23 @@ mobj_t *P_TestLineAttack(mobj_t *t1, angle_t angle, fixed_t distance,
 }
 
 //
+// P_MeleeAimSlope
+// The auto-aim of the fist, chainsaw and mbf21 melee weapons.
+// killough 8/2/98: make autoaiming prefer enemies
+//
+fixed_t P_MeleeAimSlope(mobj_t *source, angle_t angle, fixed_t range)
+{
+  fixed_t slope;
+
+  if (demo_version < DV_MBF ||
+      (slope = P_AimLineAttack(source, angle, range, MF_FRIEND),
+       !linetarget))
+    slope = P_AimLineAttack(source, angle, range, 0);
+
+  return slope;
+}
+
+//
 // Hitscan accuracy
 //
 
@@ -1839,6 +1858,8 @@ void P_HitscanInit(hitscan_t *hs, mobj_t *source, boolean from_player,
   memset(hs, 0, sizeof(*hs));
   hs->source = source;
   hs->from_player = from_player;
+  hs->setting = from_player ? &rng_player_accuracy : &rng_enemy_accuracy;
+  hs->distance = MISSILERANGE;
   hs->angle = angle;
   hs->slope = slope;
 }
@@ -1863,8 +1884,11 @@ fixed_t P_HitscanSlope(const hitscan_t *hs, int v)
 // Player: any thing. Monster: the player.
 static boolean P_HitscanHits(const hitscan_t *hs, int h, int v)
 {
-  const mobj_t *th = P_TestLineAttack(hs->source, P_HitscanAngle(hs, h),
-                                      MISSILERANGE, P_HitscanSlope(hs, v));
+  const angle_t angle = P_HitscanAngle(hs, h);
+  const fixed_t slope = hs->reaim ? P_MeleeAimSlope(hs->source, angle,
+                                                    hs->distance)
+                                  : P_HitscanSlope(hs, v);
+  const mobj_t *th = P_TestLineAttack(hs->source, angle, hs->distance, slope);
   return hs->from_player ? th != NULL : th && th->player;
 }
 
@@ -1982,8 +2006,7 @@ static void P_HitscanDecide(hitscan_t *hs, boolean want_hit)
 
 void P_HitscanRolls(hitscan_t *hs, int *h, int *v)
 {
-  const int mode = hs->from_player ? CRITICAL(rng_player_accuracy)
-                                   : CRITICAL(rng_enemy_accuracy);
+  const int mode = CRITICAL(*hs->setting);
 
   if (mode == RNG_DEFAULT || !hs->source)
     return;

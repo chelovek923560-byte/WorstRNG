@@ -702,6 +702,19 @@ static void AddToTicAngle(player_t *player)
   player->ticangle += player->mo->angle - saved_angle;
 }
 
+#define HSPREAD(shift) (((int64_t)255) << (shift))
+
+// The fist, chainsaw and mbf21 melee weapons: the roll only turns the aim, and
+// the auto-aim is then redone at the new angle (so a big enough turn misses).
+static void P_MeleeHitscan(hitscan_t *hs, mobj_t *mo, angle_t angle, int range)
+{
+  P_HitscanInit(hs, mo, true, angle, 0);
+  hs->setting = &rng_melee_accuracy;
+  hs->distance = range;
+  hs->reaim = true;
+  hs->hmax = HSPREAD(18);
+}
+
 //
 // A_Punch
 //
@@ -711,25 +724,24 @@ void A_Punch(mobj_t *mo, player_t *player, pspdef_t *psp)
   RETURN_IF_NO_PLAYER
 
   angle_t angle;
-  int t, slope, damage = (P_DamageRoll(pr_punch, 10, true)+1)<<1;
+  int t, slope, damage = (P_DamageRoll(pr_punch, 10, DMG_MELEE)+1)<<1;
   int range;
+  hitscan_t hs;
 
   if (player->powers[pw_strength])
     damage *= 10;
 
   angle = player->mo->angle;
 
-  // killough 5/5/98: remove dependence on order of evaluation:
-  t = P_Random(pr_punchangle);
-  angle += (t - P_Random(pr_punchangle))<<18;
-
   range = (mbf21 ? player->mo->info->meleerange : MELEERANGE);
 
-  // killough 8/2/98: make autoaiming prefer enemies
-  if (demo_version < DV_MBF ||
-      (slope = P_AimLineAttack(player->mo, angle, range, MF_FRIEND),
-       !linetarget))
-    slope = P_AimLineAttack(player->mo, angle, range, 0);
+  // killough 5/5/98: remove dependence on order of evaluation:
+  t = P_SpreadRoll(pr_punchangle);
+  P_MeleeHitscan(&hs, player->mo, angle, range);
+  P_HitscanRolls(&hs, &t, NULL);
+  angle += shiftleft32(t, 18);
+
+  slope = P_MeleeAimSlope(player->mo, angle, range);
 
   P_LineAttack(player->mo, angle, range, slope, damage);
 
@@ -754,23 +766,22 @@ void A_Saw(mobj_t *mo, player_t *player, pspdef_t *psp)
 {
   RETURN_IF_NO_PLAYER
 
-  int slope, damage = 2*(P_DamageRoll(pr_saw, 10, true)+1);
+  int slope, damage = 2*(P_DamageRoll(pr_saw, 10, DMG_MELEE)+1);
   int range;
   angle_t angle = player->mo->angle;
-
-  // killough 5/5/98: remove dependence on order of evaluation:
-  int t = P_Random(pr_saw);
-
-  angle += shiftleft32(t - P_Random(pr_saw), 18);
+  hitscan_t hs;
 
   // Use meleerange + 1 so that the puff doesn't skip the flash
   range = (mbf21 ? player->mo->info->meleerange : MELEERANGE) + 1;
 
-  // killough 8/2/98: make autoaiming prefer enemies
-  if (demo_version < DV_MBF ||
-      (slope = P_AimLineAttack(player->mo, angle, range, MF_FRIEND),
-       !linetarget))
-    slope = P_AimLineAttack(player->mo, angle, range, 0);
+  // killough 5/5/98: remove dependence on order of evaluation:
+  int t = P_SpreadRoll(pr_saw);
+  P_MeleeHitscan(&hs, player->mo, angle, range);
+  P_HitscanRolls(&hs, &t, NULL);
+
+  angle += shiftleft32(t, 18);
+
+  slope = P_MeleeAimSlope(player->mo, angle, range);
 
   P_LineAttack(player->mo, angle, range, slope, damage);
 
@@ -943,7 +954,6 @@ fixed_t bulletslope;
 // P_BulletSlope starts a new one; each weapon fills in its own spread.
 static hitscan_t bullet_hs;
 
-#define HSPREAD(shift) (((int64_t)255) << (shift))
 
 static void P_BulletSlope(mobj_t *mo)
 {
@@ -976,7 +986,7 @@ static void P_BulletSlope(mobj_t *mo)
 
 void P_GunShot(mobj_t *mo, boolean accurate)
 {
-  int damage = 5*(P_DamageRoll(pr_gunshot, 3, true)+1);
+  int damage = 5*(P_DamageRoll(pr_gunshot, 3, DMG_BULLET)+1);
   angle_t angle = mo->angle;
 
   if (!accurate)
@@ -1054,7 +1064,7 @@ void A_FireShotgun2(mobj_t *mo, player_t *player, pspdef_t *psp)
 
   for (i=0; i<20; i++)
     {
-      int damage = 5*(P_DamageRoll(pr_shotgun, 3, true)+1);
+      int damage = 5*(P_DamageRoll(pr_shotgun, 3, DMG_BULLET)+1);
       angle_t angle = player->mo->angle;
       // killough 5/5/98: remove dependence on order of evaluation:
       int h = P_SpreadRoll(pr_shotgun);
@@ -1151,7 +1161,7 @@ void A_BFGSpray(mobj_t *mo)
                   linetarget->z + (linetarget->height>>2), MT_EXTRABFG);
 
       for (damage=j=0; j<15; j++)
-        damage += P_DamageRoll(pr_bfg, 8, true) + 1;
+        damage += P_DamageRoll(pr_bfg, 8, DMG_PROJECTILE) + 1;
 
       P_DamageMobj(linetarget, mo->target, mo->target, damage);
     }
@@ -1381,7 +1391,7 @@ void A_WeaponBulletAttack(mobj_t *mo, player_t *player, pspdef_t *psp)
 
   for (i = 0; i < numbullets; i++)
   {
-    damage = (P_DamageRoll(pr_mbf21, damagemod, true) + 1) * damagebase;
+    damage = (P_DamageRoll(pr_mbf21, damagemod, DMG_BULLET) + 1) * damagebase;
     int h = P_SpreadRoll(pr_mbf21);
     int v = P_SpreadRoll(pr_mbf21);
     bullet_hs.hmax = P_HitscanSpreadBAM(hspread);
@@ -1412,6 +1422,7 @@ void A_WeaponMeleeAttack(mobj_t *mo, player_t *player, pspdef_t *psp)
   int damagebase, damagemod, zerkfactor, hitsound, range;
   angle_t angle;
   int t, slope, damage;
+  hitscan_t hs;
 
   if (!mbf21 || !psp->state)
     return;
@@ -1425,20 +1436,20 @@ void A_WeaponMeleeAttack(mobj_t *mo, player_t *player, pspdef_t *psp)
   if (range == 0)
     range = player->mo->info->meleerange;
 
-  damage = (P_DamageRoll(pr_mbf21, damagemod, true) + 1) * damagebase;
+  damage = (P_DamageRoll(pr_mbf21, damagemod, DMG_MELEE) + 1) * damagebase;
   if (player->powers[pw_strength])
     damage = (damage * zerkfactor) >> FRACBITS;
 
   // slight randomization; weird vanillaism here. :P
   angle = player->mo->angle;
 
-  t = P_Random(pr_mbf21);
-  angle += (t - P_Random(pr_mbf21))<<18;
+  t = P_SpreadRoll(pr_mbf21);
+  P_MeleeHitscan(&hs, player->mo, angle, range);
+  P_HitscanRolls(&hs, &t, NULL);
+  angle += shiftleft32(t, 18);
 
   // make autoaim prefer enemies
-  slope = P_AimLineAttack(player->mo, angle, range, MF_FRIEND);
-  if (!linetarget)
-    slope = P_AimLineAttack(player->mo, angle, range, 0);
+  slope = P_MeleeAimSlope(player->mo, angle, range);
 
   // attack, dammit!
   P_LineAttack(player->mo, angle, range, slope, damage);

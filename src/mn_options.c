@@ -1171,27 +1171,25 @@ void MN_OptionsApplyRNGPreset(void)
 {
     if (rng_preset >= RNG_DEFAULT && rng_preset <= RNG_WORST)
     {
-        rng_player_damage = rng_preset;
-        rng_enemy_damage = rng_preset;
-        rng_enemy_stagger = rng_preset;
-        rng_player_accuracy = rng_preset;
-        rng_enemy_accuracy = rng_preset;
+        for (int i = 0; i < RNG_NUM_SETTINGS; i++)
+        {
+            *rng_settings[i] = rng_preset;
+        }
     }
 }
 
-// Keeps the preset display in line with the three individual settings.
+// Keeps the preset display in line with the individual settings.
 void MN_OptionsUpdateRNGPreset(void)
 {
-    if (rng_player_damage == rng_enemy_damage
-        && rng_enemy_damage == rng_enemy_stagger
-        && rng_enemy_stagger == rng_player_accuracy
-        && rng_player_accuracy == rng_enemy_accuracy)
+    rng_preset = *rng_settings[0];
+
+    for (int i = 1; i < RNG_NUM_SETTINGS; i++)
     {
-        rng_preset = rng_player_damage;
-    }
-    else
-    {
-        rng_preset = RNG_PRESET_CUSTOM;
+        if (*rng_settings[i] != rng_preset)
+        {
+            rng_preset = RNG_PRESET_CUSTOM;
+            return;
+        }
     }
 }
 
