@@ -5,7 +5,7 @@ Doom with the worst possible luck.
 DOOMedRNG is a modified version of the [Woof](https://github.com/fabiangreffrath/woof)
 source port. It adds an **RNG** menu (Options → RNG) with settings that rig the game's
 random number rolls: damage rolls (melee / bullets / projectiles), hitscan accuracy for
-the player and for enemies, enemy refire and aggression, enemy pathing and focus,
+the player and for enemies, enemy crossfire (hitscan bullets hitting other monsters), enemy refire and aggression, enemy pathing and focus,
 Revenant homing missiles, pain chance, radiation suit damage, the Icon of Sin spawn,
 monster respawn and invisibility aim wobble.
 
@@ -33,3 +33,4 @@ released by id Software. All of their copyright notices are kept in the source f
 This project is not affiliated with or endorsed by the Woof project.
 
 The source code of this modified version is available in this repository.
+

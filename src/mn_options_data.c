@@ -1153,6 +1153,16 @@ static mn_item_t rng_enemy_items[] = {
         "Worst: their bullets that can hit you, hit. Invisible: aimed "
         "straight at you."),
     MN_CHOICE_ACT(
+        "Enemy Crossfire", "rng_enemy_crossfire", rng_strings, 8,
+        MN_OptionsUpdateRNGPreset,
+        "Enemy Crossfire:\n\nWhat happens when another monster "
+        "stands in the line of fire of a hitscan attack (zombiemen, "
+        "shotgunners, chaingunners, Spider Mastermind).\n\n"
+        "Default: normal.\n"
+        "Best: their bullets hit the monster in the way whenever they can.\n"
+        "Worst: their bullets never hit other monsters, they find a way "
+        "past them. Enemy Accuracy takes priority over this setting."),
+    MN_CHOICE_ACT(
         "Enemy Aggression", "rng_enemy_aggression", rng_strings, 8,
         MN_OptionsUpdateRNGPreset,
         "Enemy Aggression:\n\nWhether a monster that can see you "

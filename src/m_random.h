@@ -166,6 +166,7 @@ extern int rng_enemy_damage;
 extern int rng_enemy_stagger;
 extern int rng_player_accuracy;
 extern int rng_enemy_accuracy;
+extern int rng_enemy_crossfire;
 extern int rng_melee_accuracy;
 extern int rng_enemy_refire;
 extern int rng_enemy_aggression;
@@ -177,7 +178,7 @@ extern int rng_icon_of_sin;
 extern int rng_monster_respawn;
 
 // All rigged settings, in menu order (used by the preset).
-#define RNG_NUM_SETTINGS 16
+#define RNG_NUM_SETTINGS 17
 extern int *const rng_settings[RNG_NUM_SETTINGS];
 
 void M_BindRNGVariables(void);

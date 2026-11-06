@@ -221,6 +221,7 @@ int rng_enemy_damage = RNG_DEFAULT;
 int rng_enemy_stagger = RNG_DEFAULT;
 int rng_player_accuracy = RNG_DEFAULT;
 int rng_enemy_accuracy = RNG_DEFAULT;
+int rng_enemy_crossfire = RNG_DEFAULT;
 int rng_melee_accuracy = RNG_DEFAULT;
 int rng_enemy_refire = RNG_DEFAULT;
 int rng_enemy_aggression = RNG_DEFAULT;
@@ -235,6 +236,7 @@ int *const rng_settings[RNG_NUM_SETTINGS] = {
   &rng_player_melee_damage, &rng_player_bullet_damage,
   &rng_player_projectile_damage, &rng_enemy_damage, &rng_enemy_stagger,
   &rng_player_accuracy, &rng_melee_accuracy, &rng_enemy_accuracy,
+  &rng_enemy_crossfire,
   &rng_enemy_refire, &rng_enemy_aggression,
   &rng_enemy_pathing, &rng_enemy_focus, &rng_revenant_homing,
   &rng_radiation_suit, &rng_icon_of_sin, &rng_monster_respawn,
@@ -258,6 +260,8 @@ void M_BindRNGVariables(void)
     "Player hitscan accuracy (0 = Default; 1 = Best; 2 = Worst)");
   BIND_NUM(rng_enemy_accuracy, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
     "Enemy hitscan accuracy (0 = Default; 1 = Best; 2 = Worst)");
+  BIND_NUM(rng_enemy_crossfire, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
+    "Enemy hitscan crossfire: bullets hitting other monsters (0 = Default; 1 = Best; 2 = Worst)");
   BIND_NUM(rng_melee_accuracy, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,
     "Player melee (fist, chainsaw) accuracy (0 = Default; 1 = Best; 2 = Worst)");
   BIND_NUM(rng_enemy_refire, RNG_DEFAULT, RNG_DEFAULT, RNG_WORST,

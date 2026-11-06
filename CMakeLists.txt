@@ -43,7 +43,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 project(
     "DOOMedRNG"
-    VERSION 1.0.0
+    VERSION 1.1.0
     LANGUAGES C CXX
 )
 

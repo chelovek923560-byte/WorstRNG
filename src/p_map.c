@@ -1859,6 +1859,7 @@ void P_HitscanInit(hitscan_t *hs, mobj_t *source, boolean from_player,
   hs->source = source;
   hs->from_player = from_player;
   hs->setting = from_player ? &rng_player_accuracy : &rng_enemy_accuracy;
+  hs->setting2 = from_player ? NULL : &rng_enemy_crossfire;
   hs->distance = MISSILERANGE;
   hs->angle = angle;
   hs->slope = slope;
@@ -1892,7 +1893,7 @@ static boolean P_HitscanHits(const hitscan_t *hs, int h, int v)
   return hs->from_player ? th != NULL : th && th->player;
 }
 
-#define HS_MAXCAND 40
+#define HS_MAXCAND 72
 
 // Fills "list" with the roll values to try, best candidates first.
 // want_hit: from the middle outward. Otherwise: the extremes only (a target
@@ -2004,11 +2005,98 @@ static void P_HitscanDecide(hitscan_t *hs, boolean want_hit)
   }
 }
 
+// Monster bullets with the Enemy Crossfire setting on. A bullet can hit the
+// player, another monster (or barrel), or nothing at all. Accuracy matters
+// more than crossfire: if the player can be hit (or missed) the way Enemy
+// Accuracy wants, that wins; crossfire decides what is left. The vanilla roll
+// is kept whenever it already gives the best outcome.
+enum { HS_NONE, HS_PLAYER, HS_OTHER };
+
+static int P_HitscanClass(const hitscan_t *hs, int h, int v)
+{
+  const angle_t angle = P_HitscanAngle(hs, h);
+  const fixed_t slope = P_HitscanSlope(hs, v);
+  const mobj_t *th = P_TestLineAttack(hs->source, angle, hs->distance, slope);
+  return !th ? HS_NONE : th->player ? HS_PLAYER : HS_OTHER;
+}
+
+static int P_ShotScore(int cls, int acc, int xf)
+{
+  int s = 0;
+  if (acc == RNG_WORST)
+    s += 2 * (cls == HS_PLAYER);
+  else if (acc == RNG_BEST)
+    s += 2 * (cls != HS_PLAYER);
+  if (xf == RNG_BEST)
+    s += (cls == HS_OTHER);
+  else if (xf == RNG_WORST)
+    s += (cls != HS_OTHER);
+  return s;
+}
+
+static void P_HitscanCrossfire(hitscan_t *hs, int acc, int xf, int *h, int *v)
+{
+  const boolean has_h = hs->hmax != 0;
+  const boolean has_v = hs->vshift != 0 || hs->vmax != 0;
+  const int maxscore = (acc != RNG_DEFAULT ? 2 : 0) + 1;
+  int hl[HS_MAXCAND], vl[HS_MAXCAND];
+  int nh, nv, i, j, best, bh = 0, bv = 0;
+
+  if (!has_h && !has_v)
+    return;
+
+  best = P_ShotScore(P_HitscanClass(hs, *h, v ? *v : 0), acc, xf);
+  if (best >= maxscore)
+    return;                         // the vanilla roll is already ideal
+
+  nh = has_h ? P_HitscanCandidates(hl, true, has_v ? 32 : 8) : 1;
+  nv = has_v ? P_HitscanCandidates(vl, true, 32) : 1;
+  if (!has_h)
+    hl[0] = 0;
+  if (!has_v)
+    vl[0] = 0;
+
+  {
+    const int vanilla = best;
+    boolean found = false;
+
+    for (i = 0; i < nh && best < maxscore; i++)
+      for (j = 0; j < nv && best < maxscore; j++)
+      {
+        const int s = P_ShotScore(P_HitscanClass(hs, hl[i], vl[j]), acc, xf);
+        if (s > best)
+        {
+          best = s;
+          bh = hl[i];
+          bv = vl[j];
+          found = true;
+        }
+      }
+
+    if (found && best > vanilla)
+    {
+      *h = bh;
+      if (v)
+        *v = bv;
+    }
+  }
+}
+
 void P_HitscanRolls(hitscan_t *hs, int *h, int *v)
 {
   const int mode = CRITICAL(*hs->setting);
+  const int xf = hs->setting2 ? CRITICAL(*hs->setting2) : RNG_DEFAULT;
 
-  if (mode == RNG_DEFAULT || !hs->source)
+  if (!hs->source)
+    return;
+
+  if (xf != RNG_DEFAULT)
+  {
+    P_HitscanCrossfire(hs, mode, xf, h, v);
+    return;
+  }
+
+  if (mode == RNG_DEFAULT)
     return;
 
   if (!hs->decided)

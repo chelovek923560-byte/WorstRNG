@@ -75,6 +75,7 @@ typedef struct
   angle_t angle;         // aim before spread
   fixed_t slope;         // aim before spread
   const int *setting;    // which setting applies (player/melee/enemy accuracy)
+  const int *setting2;   // monsters only: crossfire (hitting other monsters)
   fixed_t distance;      // how far the bullet travels
   boolean reaim;         // melee: the auto-aim is redone at the rolled angle
   int64_t hmax;          // angle offset (BAM) of a +255 horizontal roll; 0 = none
