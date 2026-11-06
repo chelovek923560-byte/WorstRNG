@@ -1167,8 +1167,9 @@ static mn_item_t rng_enemy_items[] = {
         "as long as they can see you. This roll decides whether they "
         "also keep shooting after losing sight of you.\n\n"
         "Default: normal.\n"
-        "Best: they keep firing at the spot where you were, forever.\n"
-        "Worst: they stop the moment they lose sight, and come after you."),
+        "Best: they stop the moment they lose sight of you.\n"
+        "Worst: they never stop firing, even at the wall where they last "
+        "saw you."),
     MN_CHOICE_ACT(
         "Revenant Homing", "rng_revenant_homing", rng_strings, 8,
         MN_OptionsUpdateRNGPreset,

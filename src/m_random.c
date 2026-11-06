@@ -315,10 +315,11 @@ int P_RefireRoll(pr_class_t pr_class)
   switch (CRITICAL(rng_enemy_refire))
   {
     case RNG_BEST:
-      return 0;     // the monster keeps blindly firing at where you were
-    case RNG_WORST:
       return 255;   // it always checks, and goes after you the moment it
                     // cannot see you
+    case RNG_WORST:
+      return 0;     // the monster never stops firing, even at a wall where
+                    // it last saw you
     default:
       return roll;
   }
